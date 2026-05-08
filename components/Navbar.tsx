@@ -3,7 +3,17 @@
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import { ShoppingCart, Menu, X, Search, User } from 'lucide-react';
+import { getUser, logout } from '@/lib/api';
 import AuthModal from '@/components/AuthModal';
+
+const dropdownLinkStyle: React.CSSProperties = {
+  display: 'block',
+  padding: '6px 0',
+  color: '#374151',
+  fontSize: '13px',
+  textDecoration: 'none',
+  transition: 'color 0.15s',
+};
 
 const MEN_MENU = [
   { category: 'Topwear', items: ['T-Shirts', 'Casual Shirts', 'Formal Shirts', 'Sweatshirts', 'Sweaters', 'Jackets', 'Blazers & Coats', 'Suits', 'Rain Jackets'] },
@@ -107,7 +117,13 @@ export default function Navbar() {
   const [activeMenu, setActiveMenu] = useState<MenuName | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const closeTimer = useRef<NodeJS.Timeout | null>(null);
+  const closeTimer = useRef<number | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ fullName?: string; email?: string } | null>(null);
+  useEffect(() => {
+    setCurrentUser(getUser());
+  }, []);
+
+  const userFirstName = currentUser?.fullName?.split(' ')[0] || currentUser?.email?.split('@')[0] || 'there';
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -116,12 +132,14 @@ export default function Navbar() {
   }, []);
 
   const handleMenuEnter = (menuName: MenuName) => {
-    clearTimeout(closeTimer.current ?? undefined);
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+    }
     setActiveMenu(menuName);
   };
 
   const handleMenuLeave = () => {
-    closeTimer.current = setTimeout(() => setActiveMenu(null), 120);
+    closeTimer.current = window.setTimeout(() => setActiveMenu(null), 120);
   };
 
   const navItems: Array<{ label: string; href: string; hasMega?: boolean; menuName?: MenuName }> = [
@@ -333,35 +351,59 @@ export default function Navbar() {
               <span style={{ fontSize: '11px', fontWeight: 600, color: profileOpen ? '#ec4899' : '#374151' }}>Profile</span>
             </button>
 
-            {profileOpen && (
-              <div style={{
-                position: 'absolute', top: '100%', right: 0,
-                background: '#fff', borderRadius: '4px',
-                boxShadow: '0 8px 40px rgba(0,0,0,0.15)',
-                width: '200px', zIndex: 200,
-                borderTop: '3px solid #ec4899',
-                fontFamily: 'DM Sans, sans-serif',
-                padding: '16px',
-              }}>
-                <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827', marginBottom: '4px' }}>Welcome</div>
-                <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '14px' }}>To access account and manage orders</div>
-                <button
-                  onClick={() => { setProfileOpen(false); setAuthModalOpen(true); }}
-                  style={{
-                    width: '100%', padding: '9px',
-                    border: '2px solid #ec4899', color: '#ec4899',
-                    borderRadius: '4px', background: 'none',
-                    fontWeight: 700, fontSize: '13px', letterSpacing: '0.5px',
-                    cursor: 'pointer', fontFamily: 'inherit',
-                    transition: 'background 0.2s',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#fdf2f8'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
-                >
-                  LOGIN / SIGNUP
-                </button>
-              </div>
-            )}
+          {profileOpen && (
+  <div style={{
+    position: 'absolute', top: '100%', right: 0,
+    background: '#fff', borderRadius: '4px',
+    boxShadow: '0 8px 40px rgba(0,0,0,0.15)',
+    width: '200px', zIndex: 200,
+    borderTop: '3px solid #ec4899',
+    fontFamily: 'DM Sans, sans-serif',
+    padding: '16px',
+  }}>
+    {currentUser ? (
+      // ── LOGGED IN ──
+      <>
+        <div style={{ fontSize: '15px', fontWeight: '700', color: '#111827', marginBottom: '4px' }}>
+          Hi, {userFirstName}! 👋
+        </div>
+        <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '14px' }}>
+          {currentUser?.email ?? 'No email available'}
+        </div>
+        <a href="/my-orders" style={dropdownLinkStyle}>📦 My Orders</a>
+        <a href="/profile" style={dropdownLinkStyle}>👤 Profile</a>
+        <a href="/wishlist" style={dropdownLinkStyle}>❤️ Wishlist</a>
+        <hr style={{ border: 'none', borderTop: '1px solid #f3f4f6', margin: '8px 0' }} />
+        <button
+          onClick={() => { logout(); window.location.reload(); }}
+          style={{ ...dropdownLinkStyle, color: '#ef4444', width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: '6px 0', fontFamily: 'inherit' }}
+        >
+          🚪 Logout
+        </button>
+      </>
+    ) : (
+      // ── NOT LOGGED IN ──
+      <>
+        <div style={{ fontSize: '15px', fontWeight: '700', color: '#111827', marginBottom: '4px' }}>Welcome</div>
+        <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '14px' }}>
+          To access account and manage orders
+        </div>
+        <button
+          onClick={() => { setProfileOpen(false); setAuthModalOpen(true); }}
+          style={{
+            width: '100%', padding: '9px',
+            border: '2px solid #ec4899', color: '#ec4899',
+            borderRadius: '4px', background: 'none',
+            fontWeight: '700', fontSize: '13px',
+            cursor: 'pointer', fontFamily: 'inherit',
+          }}
+        >
+          LOGIN / SIGNUP
+        </button>
+      </>
+    )}
+  </div>
+  )}
           </div>
 
           {/* Cart / Bag */}
@@ -386,7 +428,7 @@ export default function Navbar() {
       {/* Mega Menu */}
       {activeMenu && (() => {
         const { cols, count } = getMenuCols(activeMenu);
-        const accent = MENU_COLORS[activeMenu];
+        const accent = MENU_COLORS[activeMenu as MenuName];
         return (
           <div
             className="mega-menu"

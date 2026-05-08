@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import { toast } from 'sonner';
+import { registerUser, loginUser, saveAuth } from '@/lib/api';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -10,312 +10,297 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [tab, setTab] = useState<'login' | 'register'>('login');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [isError, setIsError] = useState(false);
 
+  // Login form
   const [loginData, setLoginData] = useState({ email: '', password: '' });
+
+  // Register form
   const [registerData, setRegisterData] = useState({
-    firstName: '', lastName: '', email: '', password: '', confirmPassword: '',
+    fullName: '',
+    email: '',
+    password: '',
   });
 
   if (!isOpen) return null;
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!loginData.email || !loginData.password) { toast.error('Please fill in all fields'); return; }
-    setIsSubmitting(true);
-    setTimeout(() => {
-      toast.success('Logged in successfully!');
-      setIsSubmitting(false);
-      onClose();
-    }, 1500);
-  };
-
-  const handleRegisterSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!registerData.firstName || !registerData.email || !registerData.password || !registerData.confirmPassword) {
-      toast.error('Please fill in all fields'); return;
+  // ── HANDLE LOGIN ──────────────────────────────
+  const handleLogin = async () => {
+    if (!loginData.email || !loginData.password) {
+      setIsError(true);
+      setMessage('Please fill all fields');
+      return;
     }
-    if (registerData.password !== registerData.confirmPassword) { toast.error('Passwords do not match'); return; }
-    if (registerData.password.length < 8) { toast.error('Password must be at least 8 characters'); return; }
-    setIsSubmitting(true);
-    setTimeout(() => {
-      toast.success('Account created successfully!');
-      setIsSubmitting(false);
-      onClose();
-    }, 1500);
+    setLoading(true);
+    setMessage('');
+    try {
+      const res = await loginUser(loginData);
+      if (res.accessToken) {
+        saveAuth(res.accessToken, res.refreshToken, res.user);
+        setIsError(false);
+        setMessage(`Welcome back, ${res.user.fullName}! 🎉`);
+        setTimeout(() => {
+          onClose();
+          window.location.reload();
+        }, 1500);
+      } else {
+        setIsError(true);
+        setMessage(res.message || 'Login failed');
+      }
+    } catch {
+      setIsError(true);
+      setMessage('Server error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '10px 14px',
-    border: '1.5px solid #e5e7eb', borderRadius: '8px',
-    fontSize: '14px', color: '#111827', outline: 'none',
-    fontFamily: 'DM Sans, sans-serif', background: '#fff',
-    transition: 'border-color 0.2s',
-  };
-
-  const labelStyle: React.CSSProperties = {
-    display: 'block', fontSize: '13px',
-    fontWeight: 600, color: '#374151', marginBottom: '6px',
+  // ── HANDLE REGISTER ───────────────────────────
+  const handleRegister = async () => {
+    if (!registerData.fullName || !registerData.email || !registerData.password) {
+      setIsError(true);
+      setMessage('Please fill all fields');
+      return;
+    }
+    if (registerData.password.length < 6) {
+      setIsError(true);
+      setMessage('Password must be at least 6 characters');
+      return;
+    }
+    setLoading(true);
+    setMessage('');
+    try {
+      const res = await registerUser(registerData);
+      if (res.message?.includes('successful')) {
+        setIsError(false);
+        setMessage('✅ Registration successful! Please check your email to verify.');
+        setRegisterData({ fullName: '', email: '', password: '' });
+      } else {
+        setIsError(true);
+        setMessage(res.message || 'Registration failed');
+      }
+    } catch {
+      setIsError(true);
+      setMessage('Server error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 999,
-        background: 'rgba(0,0,0,0.6)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}
-    >
+    <>
+      {/* Overlay */}
       <div
-        onClick={e => e.stopPropagation()}
+        onClick={onClose}
         style={{
-          background: '#fff', borderRadius: '16px',
-          width: '860px', maxWidth: '95vw',
-          maxHeight: '90vh', overflow: 'hidden',
-          display: 'flex', position: 'relative',
-          boxShadow: '0 30px 80px rgba(0,0,0,0.3)',
+          position: 'fixed', inset: 0,
+          background: 'rgba(0,0,0,0.5)',
+          zIndex: 1000,
+          backdropFilter: 'blur(4px)',
         }}
-      >
-        {/* Close */}
-        <button
-          onClick={onClose}
-          style={{
-            position: 'absolute', top: '16px', right: '16px',
-            background: 'rgba(255,255,255,0.9)', border: 'none',
-            borderRadius: '50%', width: '32px', height: '32px',
-            cursor: 'pointer', zIndex: 10,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-          }}
-        >
-          <X size={16} color="#374151" />
-        </button>
+      />
 
-        {/* Left - Branding + Video */}
+      {/* Modal */}
+      <div style={{
+        position: 'fixed',
+        top: '50%', left: '50%',
+        transform: 'translate(-50%, -50%)',
+        background: '#ffffff',
+        borderRadius: '20px',
+        width: '420px',
+        maxWidth: '95vw',
+        zIndex: 1001,
+        boxShadow: '0 25px 60px rgba(0,0,0,0.2)',
+        overflow: 'hidden',
+        fontFamily: 'DM Sans, sans-serif',
+      }}>
+
+        {/* Header */}
         <div style={{
-          width: '45%', position: 'relative',
-          background: '#111827', flexShrink: 0,
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          overflow: 'hidden',
+          background: 'linear-gradient(135deg, #ec4899, #f472b6)',
+          padding: '28px 32px 24px',
+          position: 'relative',
         }}>
-          {/* Video background */}
-          <video
-            autoPlay muted loop playsInline
+          <button
+            onClick={onClose}
             style={{
-              position: 'absolute', inset: 0,
-              width: '100%', height: '100%',
-              objectFit: 'cover', opacity: 0.5,
+              position: 'absolute', top: '16px', right: '16px',
+              background: 'rgba(255,255,255,0.2)',
+              border: 'none', color: 'white',
+              width: '32px', height: '32px',
+              borderRadius: '50%', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
           >
-            {/* Replace with your actual video src */}
-            <source src="/videos/fashion.mp4" type="video/mp4" />
-          </video>
-
-          {/* Overlay gradient */}
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'linear-gradient(135deg, rgba(236,72,153,0.6) 0%, rgba(17,24,39,0.7) 100%)',
-          }} />
-
-          {/* Brand text */}
-          <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '40px' }}>
-            <div style={{
-              fontFamily: 'Georgia, serif',
-              fontSize: '36px', fontWeight: 800,
-              color: '#fff', letterSpacing: '6px',
-              textTransform: 'uppercase',
-              textShadow: '0 2px 20px rgba(0,0,0,0.3)',
-              marginBottom: '12px',
-            }}>
-              SHOPORE
-            </div>
-            <div style={{
-              color: 'rgba(255,255,255,0.8)',
-              fontSize: '14px', letterSpacing: '2px',
-              textTransform: 'uppercase',
-              fontFamily: 'DM Sans, sans-serif',
-            }}>
-              Your Style. Your Story.
-            </div>
-          </div>
+            <X size={16} />
+          </button>
+          <h2 style={{
+            color: 'white', margin: 0,
+            fontSize: '24px', fontWeight: '700',
+          }}>
+            🛍️ Shopore
+          </h2>
+          <p style={{ color: 'rgba(255,255,255,0.85)', margin: '6px 0 0', fontSize: '14px' }}>
+            {tab === 'login' ? 'Welcome back!' : 'Create your account'}
+          </p>
         </div>
 
-        {/* Right - Form */}
-        <div style={{
-          flex: 1, padding: '40px 36px',
-          overflowY: 'auto',
-          fontFamily: 'DM Sans, sans-serif',
-        }}>
-          {/* Tabs */}
-          <div style={{ display: 'flex', marginBottom: '28px', borderBottom: '2px solid #f3f4f6' }}>
-            {(['login', 'register'] as const).map(tab => (
-              <button
-                key={tab}
-                onClick={() => setMode(tab)}
-                style={{
-                  flex: 1, padding: '12px',
-                  background: 'none', border: 'none',
-                  fontSize: '15px', fontWeight: 700,
-                  cursor: 'pointer', fontFamily: 'inherit',
-                  color: mode === tab ? '#ec4899' : '#9ca3af',
-                  borderBottom: mode === tab ? '2px solid #ec4899' : '2px solid transparent',
-                  marginBottom: '-2px', transition: 'all 0.2s',
-                  textTransform: 'capitalize',
-                }}
-              >
-                {tab === 'login' ? 'Log In' : 'Sign Up'}
-              </button>
-            ))}
-          </div>
+        {/* Tabs */}
+        <div style={{ display: 'flex', borderBottom: '2px solid #f3f4f6' }}>
+          {(['login', 'register'] as const).map(t => (
+            <button
+              key={t}
+              onClick={() => { setTab(t); setMessage(''); }}
+              style={{
+                flex: 1, padding: '14px',
+                border: 'none', background: 'none',
+                fontSize: '14px', fontWeight: '600',
+                cursor: 'pointer',
+                color: tab === t ? '#ec4899' : '#9ca3af',
+                borderBottom: tab === t ? '2px solid #ec4899' : '2px solid transparent',
+                marginBottom: '-2px',
+                transition: 'all 0.2s',
+                fontFamily: 'inherit',
+                textTransform: 'capitalize',
+              }}
+            >
+              {t === 'login' ? 'Login' : 'Register'}
+            </button>
+          ))}
+        </div>
+
+        {/* Form */}
+        <div style={{ padding: '28px 32px' }}>
+
+          {/* Message */}
+          {message && (
+            <div style={{
+              padding: '12px 16px',
+              borderRadius: '10px',
+              marginBottom: '20px',
+              fontSize: '13px',
+              fontWeight: '500',
+              background: isError ? '#fef2f2' : '#f0fdf4',
+              color: isError ? '#ef4444' : '#16a34a',
+              border: `1px solid ${isError ? '#fecaca' : '#bbf7d0'}`,
+            }}>
+              {message}
+            </div>
+          )}
 
           {/* LOGIN FORM */}
-          {mode === 'login' && (
-            <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-              <div>
-                <label style={labelStyle}>Email Address</label>
-                <input
-                  type="email" placeholder="you@example.com"
-                  value={loginData.email}
-                  onChange={e => setLoginData(p => ({ ...p, email: e.target.value }))}
-                  style={inputStyle}
-                  onFocus={e => e.target.style.borderColor = '#ec4899'}
-                  onBlur={e => e.target.style.borderColor = '#e5e7eb'}
-                />
-              </div>
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <label style={{ ...labelStyle, marginBottom: 0 }}>Password</label>
-                  <a href="#" style={{ fontSize: '12px', color: '#ec4899', textDecoration: 'none', fontWeight: 600 }}>Forgot password?</a>
-                </div>
-                <input
-                  type="password" placeholder="••••••••"
-                  value={loginData.password}
-                  onChange={e => setLoginData(p => ({ ...p, password: e.target.value }))}
-                  style={inputStyle}
-                  onFocus={e => e.target.style.borderColor = '#ec4899'}
-                  onBlur={e => e.target.style.borderColor = '#e5e7eb'}
-                />
-              </div>
+          {tab === 'login' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <input
+                type="email"
+                placeholder="Email address"
+                value={loginData.email}
+                onChange={e => setLoginData({ ...loginData, email: e.target.value })}
+                style={inputStyle}
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                value={loginData.password}
+                onChange={e => setLoginData({ ...loginData, password: e.target.value })}
+                onKeyDown={e => e.key === 'Enter' && handleLogin()}
+                style={inputStyle}
+              />
               <button
-                type="submit" disabled={isSubmitting}
-                style={{
-                  width: '100%', padding: '12px',
-                  background: 'linear-gradient(135deg, #ec4899, #f472b6)',
-                  color: '#fff', border: 'none', borderRadius: '8px',
-                  fontSize: '15px', fontWeight: 700, cursor: 'pointer',
-                  fontFamily: 'inherit', marginTop: '4px',
-                  boxShadow: '0 4px 15px rgba(236,72,153,0.3)',
-                  transition: 'opacity 0.2s',
-                  opacity: isSubmitting ? 0.7 : 1,
-                }}
+                onClick={handleLogin}
+                disabled={loading}
+                style={btnStyle}
               >
-                {isSubmitting ? 'Signing in...' : 'Sign In'}
+                {loading ? 'Logging in...' : 'Login →'}
               </button>
               <p style={{ textAlign: 'center', fontSize: '13px', color: '#9ca3af', margin: 0 }}>
                 Don't have an account?{' '}
-                <button type="button" onClick={() => setMode('register')} style={{ color: '#ec4899', background: 'none', border: 'none', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px' }}>
-                  Sign Up
+                <button
+                  onClick={() => setTab('register')}
+                  style={{ color: '#ec4899', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '600', fontFamily: 'inherit' }}
+                >
+                  Register
                 </button>
               </p>
-            </form>
+            </div>
           )}
 
           {/* REGISTER FORM */}
-          {mode === 'register' && (
-            <form onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={labelStyle}>First Name</label>
-                  <input
-                    type="text" placeholder="John"
-                    value={registerData.firstName}
-                    onChange={e => setRegisterData(p => ({ ...p, firstName: e.target.value }))}
-                    style={inputStyle}
-                    onFocus={e => e.target.style.borderColor = '#ec4899'}
-                    onBlur={e => e.target.style.borderColor = '#e5e7eb'}
-                  />
-                </div>
-                <div>
-                  <label style={labelStyle}>Last Name</label>
-                  <input
-                    type="text" placeholder="Doe"
-                    value={registerData.lastName}
-                    onChange={e => setRegisterData(p => ({ ...p, lastName: e.target.value }))}
-                    style={inputStyle}
-                    onFocus={e => e.target.style.borderColor = '#ec4899'}
-                    onBlur={e => e.target.style.borderColor = '#e5e7eb'}
-                  />
-                </div>
-              </div>
-              <div>
-                <label style={labelStyle}>Email Address</label>
-                <input
-                  type="email" placeholder="you@example.com"
-                  value={registerData.email}
-                  onChange={e => setRegisterData(p => ({ ...p, email: e.target.value }))}
-                  style={inputStyle}
-                  onFocus={e => e.target.style.borderColor = '#ec4899'}
-                  onBlur={e => e.target.style.borderColor = '#e5e7eb'}
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>Password</label>
-                <input
-                  type="password" placeholder="At least 8 characters"
-                  value={registerData.password}
-                  onChange={e => setRegisterData(p => ({ ...p, password: e.target.value }))}
-                  style={inputStyle}
-                  onFocus={e => e.target.style.borderColor = '#ec4899'}
-                  onBlur={e => e.target.style.borderColor = '#e5e7eb'}
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>Confirm Password</label>
-                <input
-                  type="password" placeholder="Confirm your password"
-                  value={registerData.confirmPassword}
-                  onChange={e => setRegisterData(p => ({ ...p, confirmPassword: e.target.value }))}
-                  style={inputStyle}
-                  onFocus={e => e.target.style.borderColor = '#ec4899'}
-                  onBlur={e => e.target.style.borderColor = '#e5e7eb'}
-                />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                <input type="checkbox" id="terms" required style={{ marginTop: '2px' }} />
-                <label htmlFor="terms" style={{ fontSize: '12px', color: '#6b7280' }}>
-                  I agree to the{' '}
-                  <a href="#" style={{ color: '#ec4899', fontWeight: 600, textDecoration: 'none' }}>Terms of Service</a>
-                  {' '}and{' '}
-                  <a href="#" style={{ color: '#ec4899', fontWeight: 600, textDecoration: 'none' }}>Privacy Policy</a>
-                </label>
-              </div>
+          {tab === 'register' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <input
+                type="text"
+                placeholder="Full name"
+                value={registerData.fullName}
+                onChange={e => setRegisterData({ ...registerData, fullName: e.target.value })}
+                style={inputStyle}
+              />
+              <input
+                type="email"
+                placeholder="Email address"
+                value={registerData.email}
+                onChange={e => setRegisterData({ ...registerData, email: e.target.value })}
+                style={inputStyle}
+              />
+              <input
+                type="password"
+                placeholder="Password (min 6 characters)"
+                value={registerData.password}
+                onChange={e => setRegisterData({ ...registerData, password: e.target.value })}
+                onKeyDown={e => e.key === 'Enter' && handleRegister()}
+                style={inputStyle}
+              />
               <button
-                type="submit" disabled={isSubmitting}
-                style={{
-                  width: '100%', padding: '12px',
-                  background: 'linear-gradient(135deg, #ec4899, #f472b6)',
-                  color: '#fff', border: 'none', borderRadius: '8px',
-                  fontSize: '15px', fontWeight: 700, cursor: 'pointer',
-                  fontFamily: 'inherit',
-                  boxShadow: '0 4px 15px rgba(236,72,153,0.3)',
-                  opacity: isSubmitting ? 0.7 : 1,
-                }}
+                onClick={handleRegister}
+                disabled={loading}
+                style={btnStyle}
               >
-                {isSubmitting ? 'Creating account...' : 'Create Account'}
+                {loading ? 'Creating account...' : 'Create Account →'}
               </button>
               <p style={{ textAlign: 'center', fontSize: '13px', color: '#9ca3af', margin: 0 }}>
                 Already have an account?{' '}
-                <button type="button" onClick={() => setMode('login')} style={{ color: '#ec4899', background: 'none', border: 'none', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px' }}>
-                  Log In
+                <button
+                  onClick={() => setTab('login')}
+                  style={{ color: '#ec4899', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '600', fontFamily: 'inherit' }}
+                >
+                  Login
                 </button>
               </p>
-            </form>
+            </div>
           )}
         </div>
       </div>
-    </div>
+    </>
   );
 }
+
+// ── STYLES ────────────────────────────────────────
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '12px 16px',
+  border: '2px solid rgba(236,72,153,0.15)',
+  borderRadius: '10px',
+  fontSize: '14px',
+  outline: 'none',
+  fontFamily: 'DM Sans, sans-serif',
+  color: '#1f2937',
+  boxSizing: 'border-box',
+  transition: 'border-color 0.2s',
+};
+
+const btnStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '13px',
+  background: 'linear-gradient(135deg, #ec4899, #f472b6)',
+  color: 'white',
+  border: 'none',
+  borderRadius: '10px',
+  fontSize: '15px',
+  fontWeight: '700',
+  cursor: 'pointer',
+  fontFamily: 'DM Sans, sans-serif',
+  transition: 'opacity 0.2s',
+};

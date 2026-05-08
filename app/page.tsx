@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 function AutoSlider() {
   useEffect(() => {
@@ -28,6 +29,59 @@ function AutoSlider() {
 }
 
 export default function Home() {
+  const [showMenu, setShowMenu] = useState(false);
+  const [selectedMenu, setSelectedMenu] = useState<'Men' | 'Women' | 'Kids' | 'Home' | 'Beauty' | 'GenZ'>('Men');
+
+  const menuTabs = ['Men', 'Women', 'Kids', 'Home', 'Beauty', 'GenZ'] as const;
+  const menuData: Record<typeof menuTabs[number], Array<{ title: string; items: string[] }>> = {
+    Men: [
+      { title: 'Casual Wear', items: ['T-Shirts', 'Polos', 'Shirts', 'Sweatshirts & Pullovers', 'Jackets', 'Jeans', 'Shorts', 'Co-ords'] },
+      { title: 'Formal Wear', items: ['Shirts', 'Trousers', 'Suit Sets', 'Blazers & Coats'] },
+      { title: 'Indian & Festive Wear', items: ['Kurtas', 'Kurta Sets', 'Nehru Jackets', 'Dhotis & Pyjamas'] },
+      { title: 'Winterwear', items: ['Sweaters & Cardigans', 'Sweatshirts & Pullovers', 'Jackets & Coats', 'Thermals'] },
+      { title: 'Innerwear & Sleepwear', items: ['Vests', 'Loungewear T-Shirts', 'Briefs & Trunks', 'Boxers', 'Socks'] },
+      { title: 'Athleisure', items: ['Active T-Shirts', 'Jackets & Sweatshirts', 'Shorts', 'Track Pants & Joggers', 'Tracksuits & Sets'] },
+      { title: 'Footwear', items: ['Casual Shoes & Loafers', 'Sports Shoes', 'Formal Shoes', 'Sandals & Floaters', 'Boots'] },
+      { title: 'Accessories', items: ['Belts', 'Caps & Hats', 'Travel Accessories', 'Watches', 'Sunglasses & Frames'] },
+    ],
+    Women: [
+      { title: 'Western Wear', items: ['Dresses', 'Tops', 'Tshirts', 'Jeans', 'Trousers & Capris', 'Shorts & Skirts', 'Co-ords', 'Playsuits', 'Jumpsuits', 'Shrugs'] },
+      { title: 'Ethnic Wear', items: ['Kurtas & Suits', 'Kurtis, Tunics & Tops', 'Sarees', 'Leggings, Salwars & Churidars', 'Skirts & Palazzos', 'Dress Materials', 'Lehenga Cholis', 'Dupattas & Shawls'] },
+      { title: 'Lingerie & Sleepwear', items: ['Bra', 'Briefs', 'Shapewear', 'Sleepwear & Loungewear', 'Swimwear', 'Camisoles & Thermals'] },
+      { title: 'Footwear', items: ['Flats', 'Casual Shoes', 'Heels', 'Boots', 'Sports Shoes & Floaters'] },
+      { title: 'Beauty & Personal Care', items: ['Makeup', 'Skincare', 'Fragrances', 'Haircare', 'Premium Beauty'] },
+      { title: 'Jewellery', items: ['Fashion Jewellery', 'Fine Jewellery'] },
+    ],
+    Kids: [
+      { title: 'Boys Clothing', items: ['T-Shirts', 'Shirts', 'Clothing Sets', 'Ethnic Wear'] },
+      { title: 'Girls Clothing', items: ['Dresses', 'Tops', 'Tshirts', 'Clothing Sets', 'Party Wear', 'Lehenga Choli', 'Kurta Sets', 'Skirts & Shorts'] },
+      { title: 'Footwear', items: ['Casual Shoes', 'Flipflops', 'Sports Shoes', 'Flats', 'Sandals', 'Heels', 'School Shoes', 'Socks'] },
+      { title: 'Toys & Games', items: ['Learning & Development', 'Activity Toys', 'Soft Toys', 'Action Figures'] },
+      { title: 'Infants', items: ['Bodysuits', 'Rompers & Sleepsuits', 'Clothing Sets', 'T-Shirts & Tops', 'Dresses', 'Bottomwear', 'Winter Wear'] },
+    ],
+    Home: [
+      { title: 'Bed Linen & Furnishing', items: ['Bed Sheets', 'Bedding Sets', 'Blankets', 'Pillows', 'Cushions'] },
+      { title: 'Bath', items: ['Bath Towels', 'Hand & Face Towels', 'Bath Rugs', 'Bath Robes'] },
+      { title: 'Decor', items: ['Wall Decor', 'Showpieces & Vases', 'Planters', 'Clocks', 'Lamps'] },
+      { title: 'Kitchen & Table', items: ['Dinnerware', 'Cookware', 'Kitchen Storage', 'Barware'] },
+      { title: 'Storage', items: ['Bins', 'Hangers', 'Organisers', 'Laundry Bags'] },
+    ],
+    Beauty: [
+      { title: 'Makeup', items: ['Lipstick', 'Lip Gloss', 'Mascara', 'Eyeliner', 'Kajal'] },
+      { title: 'Skincare', items: ['Moisturiser', 'Cleanser', 'Masks', 'Sunscreen'] },
+      { title: 'Haircare', items: ['Shampoo', 'Conditioner', 'Hair Oil', 'Serum'] },
+      { title: 'Fragrances', items: ['Perfume', 'Deodorant', 'Body Mist'] },
+      { title: 'Personal Care', items: ['Bath & Body', 'Wellness', 'Appliances'] },
+    ],
+    GenZ: [
+      { title: 'Women’s Western', items: ['Dresses Under ₹599', 'Tops Under ₹399', 'Jeans Under ₹599'] },
+      { title: 'Men’s Casual', items: ['T-Shirts Under ₹299', 'Shirts Under ₹499', 'Jeans Under ₹599'] },
+      { title: 'Footwear', items: ['Heels Under ₹599', 'Flats Under ₹499', 'Casual Shoes Under ₹699', 'Sports Shoes Under ₹999'] },
+      { title: 'Beauty & Grooming', items: ['Skincare Under ₹299', 'Haircare Under ₹399', 'Makeup Under ₹299'] },
+      { title: 'Accessories', items: ['Jewellery Under ₹299', 'Bags Under ₹499', 'Sunglasses Under ₹699'] },
+    ],
+  };
+
   return (
     <>
       <style>{`
@@ -912,7 +966,7 @@ export default function Home() {
             display: 'grid',
             gridTemplateColumns: 'repeat(5, 1fr)',
             gap: '16px',
-            alignItems: 'stretch',  // ✅ সব cell সমান height
+            alignItems: 'stretch',  
           }}>
             {[
               { img: 'https://storage.googleapis.com/images_cms_preprod_sscom/Watches_web_7a4a8f76ac/Watches_web_7a4a8f76ac.png', name: 'Watches' },
@@ -921,25 +975,35 @@ export default function Home() {
               { img: 'https://storage.googleapis.com/images_cms_preprod_sscom/Makeup_web_8a5e844c1a/Makeup_web_8a5e844c1a.png', name: 'Makeup' },
               { isExplore: true },
             ].map((item, i) => {
-             if ('isExplore' in item) return (
-  <div
+           if ('isExplore' in item) return (
+  <button
     key={i}
+    type="button"
+    onClick={() => {
+      setSelectedMenu('Men');
+      setShowMenu(true);
+    }}
     style={{
       cursor: 'pointer',
       textAlign: 'center',
       transition: 'transform 0.3s',
       display: 'flex',
       flexDirection: 'column',
+      border: 'none',
+      background: 'transparent',
+      padding: 0,
+      width: '100%',
     }}
-    onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-4px)'}
-    onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)'}
+    onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-4px)'}
+    onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)'}
+    aria-label="Explore More"
   >
     <img
       src="https://storage.googleapis.com/images_cms_preprod_sscom/Explore_more_1_c0730c1191/Explore_more_1_c0730c1191.png"
       alt="Explore More"
       style={{ width: '100%', height: 'auto', display: 'block', borderRadius: '8px' }}
     />
-  </div>
+  </button>
 );
 
               return (
@@ -968,6 +1032,108 @@ export default function Home() {
             })}
           </div>
         </section>
+
+        {/* ── MEGA MENU MODAL ── */}
+        {showMenu && (
+          <div
+            onClick={() => setShowMenu(false)}
+            style={{
+              position: 'fixed', inset: 0,
+              background: 'rgba(0,0,0,0.4)',
+              zIndex: 1000,
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'center',
+              paddingTop: '80px',
+            }}
+          >
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                  background: 'linear-gradient(135deg, rgba(255, 245, 250, 0.94), rgba(255,255,255,0.98))',
+                  borderRadius: '20px',
+                  width: '84%',
+                  maxWidth: '900px',
+                  maxHeight: '80vh',
+                  overflowY: 'auto',
+                  display: 'flex',
+                  position: 'relative',
+                  border: '1px solid rgba(236,72,153,0.18)',
+                  backdropFilter: 'blur(24px)',
+                  boxShadow: '0 30px 90px rgba(236,72,153,0.18)',
+                }}
+              >
+                {/* Left sidebar */}
+                <div style={{ minWidth: '150px', borderRight: '1px solid rgba(236,72,153,0.12)', padding: '16px 0' }}>
+                  {menuTabs.map(cat => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setSelectedMenu(cat)}
+                      style={{
+                        width: '100%',
+                        padding: '14px 20px',
+                        fontSize: '15px',
+                        fontWeight: selectedMenu === cat ? 700 : 600,
+                        color: selectedMenu === cat ? '#ec4899' : '#1f2937',
+                        cursor: 'pointer',
+                        border: 'none',
+                        textAlign: 'left',
+                        background: selectedMenu === cat ? 'rgba(236,72,153,0.12)' : 'transparent',
+                        borderLeft: selectedMenu === cat ? '4px solid #ec4899' : '4px solid transparent',
+                        transition: 'all 0.2s',
+                      }}
+                      onMouseEnter={e => {
+                        if (selectedMenu !== cat) {
+                          (e.currentTarget as HTMLButtonElement).style.background = 'rgba(236,72,153,0.08)';
+                          (e.currentTarget as HTMLButtonElement).style.color = '#ec4899';
+                        }
+                      }}
+                      onMouseLeave={e => {
+                        if (selectedMenu !== cat) {
+                          (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+                          (e.currentTarget as HTMLButtonElement).style.color = '#1f2937';
+                        }
+                      }}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+
+              {/* Right content */}
+              <div style={{ padding: '16px 20px', flex: 1, display: 'grid', gridTemplateColumns: 'repeat(4, minmax(130px, 1fr))', gap: '16px' }}>
+                {menuData[selectedMenu].map(group => (
+                  <div key={group.title}>
+                    <p style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937', marginBottom: '10px' }}>{group.title}</p>
+                    {group.items.map(it => (
+                      <p
+                        key={it}
+                        style={{ fontSize: '13px', color: '#6b7280', marginBottom: '6px', cursor: 'pointer', transition: 'color 0.2s' }}
+                        onMouseEnter={e => (e.currentTarget as HTMLParagraphElement).style.color = '#ec4899'}
+                        onMouseLeave={e => (e.currentTarget as HTMLParagraphElement).style.color = '#6b7280'}
+                      >
+                        {it}
+                      </p>
+                    ))}
+                  </div>
+                ))}
+              </div>
+
+              {/* Close button */}
+              <button
+                onClick={() => setShowMenu(false)}
+                style={{
+                  position: 'absolute', top: '12px', right: '12px',
+                  background: '#f3f4f6', border: 'none',
+                  borderRadius: '50%', width: '36px', height: '36px',
+                  fontSize: '18px', cursor: 'pointer', color: '#6b7280',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >×</button>
+            </div>
+          </div>
+        )}
 
       </div>
     </>
