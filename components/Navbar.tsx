@@ -306,15 +306,20 @@ export default function Navbar() {
             {navItems.map(item => (
               <li key={item.href}>
                 {item.hasMega && item.menuName ? (
-                  <a
-                    href={item.href}
+                  <span
                     className={activeMenu === item.menuName ? 'active' : ''}
-                    style={{ '--menu-accent': MENU_COLORS[item.menuName] } as React.CSSProperties}
+                    style={{
+                      '--menu-accent': MENU_COLORS[item.menuName],
+                      cursor: 'default',
+                      color: activeMenu === item.menuName ? MENU_COLORS[item.menuName] : '#6b7280',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                    } as React.CSSProperties}
                     onMouseEnter={() => handleMenuEnter(item.menuName!)}
                     onMouseLeave={handleMenuLeave}
                   >
                     {item.label}
-                  </a>
+                  </span>
                 ) : (
                   <Link href={item.href}>{item.label}</Link>
                 )}
@@ -351,59 +356,59 @@ export default function Navbar() {
               <span style={{ fontSize: '11px', fontWeight: 600, color: profileOpen ? '#ec4899' : '#374151' }}>Profile</span>
             </button>
 
-          {profileOpen && (
-  <div style={{
-    position: 'absolute', top: '100%', right: 0,
-    background: '#fff', borderRadius: '4px',
-    boxShadow: '0 8px 40px rgba(0,0,0,0.15)',
-    width: '200px', zIndex: 200,
-    borderTop: '3px solid #ec4899',
-    fontFamily: 'DM Sans, sans-serif',
-    padding: '16px',
-  }}>
-    {currentUser ? (
-      // ── LOGGED IN ──
-      <>
-        <div style={{ fontSize: '15px', fontWeight: '700', color: '#111827', marginBottom: '4px' }}>
-          Hi, {userFirstName}! 👋
-        </div>
-        <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '14px' }}>
-          {currentUser?.email ?? 'No email available'}
-        </div>
-        <a href="/my-orders" style={dropdownLinkStyle}>📦 My Orders</a>
-        <a href="/profile" style={dropdownLinkStyle}>👤 Profile</a>
-        <a href="/wishlist" style={dropdownLinkStyle}>❤️ Wishlist</a>
-        <hr style={{ border: 'none', borderTop: '1px solid #f3f4f6', margin: '8px 0' }} />
-        <button
-          onClick={() => { logout(); window.location.reload(); }}
-          style={{ ...dropdownLinkStyle, color: '#ef4444', width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: '6px 0', fontFamily: 'inherit' }}
-        >
-          🚪 Logout
-        </button>
-      </>
-    ) : (
-      // ── NOT LOGGED IN ──
-      <>
-        <div style={{ fontSize: '15px', fontWeight: '700', color: '#111827', marginBottom: '4px' }}>Welcome</div>
-        <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '14px' }}>
-          To access account and manage orders
-        </div>
-        <button
-          onClick={() => { setProfileOpen(false); setAuthModalOpen(true); }}
-          style={{
-            width: '100%', padding: '9px',
-            border: '2px solid #ec4899', color: '#ec4899',
-            borderRadius: '4px', background: 'none',
-            fontWeight: '700', fontSize: '13px',
-            cursor: 'pointer', fontFamily: 'inherit',
-          }}
-        >
-          LOGIN / SIGNUP
-        </button>
-      </>
-    )}
-  </div>
-  )}
+            {profileOpen && (
+              <div style={{
+                position: 'absolute', top: '100%', right: 0,
+                background: '#fff', borderRadius: '4px',
+                boxShadow: '0 8px 40px rgba(0,0,0,0.15)',
+                width: '200px', zIndex: 200,
+                borderTop: '3px solid #ec4899',
+                fontFamily: 'DM Sans, sans-serif',
+                padding: '16px',
+              }}>
+                {currentUser ? (
+                  // ── LOGGED IN ──
+                  <>
+                    <div style={{ fontSize: '15px', fontWeight: '700', color: '#111827', marginBottom: '4px' }}>
+                      Hi, {userFirstName}! 👋
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '14px' }}>
+                      {currentUser?.email ?? 'No email available'}
+                    </div>
+                    <a href="/my-orders" style={dropdownLinkStyle}>📦 My Orders</a>
+                    <a href="/profile" style={dropdownLinkStyle}>👤 Profile</a>
+                    <a href="/wishlist" style={dropdownLinkStyle}>❤️ Wishlist</a>
+                    <hr style={{ border: 'none', borderTop: '1px solid #f3f4f6', margin: '8px 0' }} />
+                    <button
+                      onClick={() => { logout(); window.location.reload(); }}
+                      style={{ ...dropdownLinkStyle, color: '#ef4444', width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: '6px 0', fontFamily: 'inherit' }}
+                    >
+                      🚪 Logout
+                    </button>
+                  </>
+                ) : (
+                  // ── NOT LOGGED IN ──
+                  <>
+                    <div style={{ fontSize: '15px', fontWeight: '700', color: '#111827', marginBottom: '4px' }}>Welcome</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '14px' }}>
+                      To access account and manage orders
+                    </div>
+                    <button
+                      onClick={() => { setProfileOpen(false); setAuthModalOpen(true); }}
+                      style={{
+                        width: '100%', padding: '9px',
+                        border: '2px solid #ec4899', color: '#ec4899',
+                        borderRadius: '4px', background: 'none',
+                        fontWeight: '700', fontSize: '13px',
+                        cursor: 'pointer', fontFamily: 'inherit',
+                      }}
+                    >
+                      LOGIN / SIGNUP
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Cart / Bag */}
@@ -444,10 +449,12 @@ export default function Navbar() {
               <div className="mega-col" key={ci}>
                 {colSections.map(sec => (
                   <div className="mega-section" key={sec.category}>
-                    <a className="mega-category">{sec.category}</a>
+                    <a className="mega-category" href={`/${activeMenu}/${sec.category.toLowerCase().replace(/\s+&\s+/g, '-').replace(/[\s,]+/g, '-')}`}>{sec.category}</a>
                     {sec.items.length > 0 && <div className="mega-divider" />}
                     {sec.items.map(item => (
-                      <a className="mega-item" key={item}>{item}</a>
+                      <a className="mega-item" key={item} href={`/${activeMenu}/${sec.category.toLowerCase().replace(/\s+&\s+/g, '-').replace(/[\s,]+/g, '-')}`}>
+                        {item}
+                      </a>
                     ))}
                   </div>
                 ))}
