@@ -3,8 +3,13 @@
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import { ShoppingCart, Menu, X, Search, User } from 'lucide-react';
+<<<<<<< HEAD
 //import { getUser, logout } from '@/lib/api';
 //import AuthModal from '@/components/AuthModal';
+=======
+import { getUser, logout } from '@/lib/api';
+import AuthModal from '@/components/AuthModal';
+>>>>>>> 718bdf12556d0964b573f1775c7825bf665448cf
 
 const dropdownLinkStyle: React.CSSProperties = {
   display: 'block',
@@ -119,9 +124,15 @@ export default function Navbar() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const closeTimer = useRef<number | null>(null);
   const [currentUser, setCurrentUser] = useState<{ fullName?: string; email?: string } | null>(null);
+<<<<<<< HEAD
   // useEffect(() => {
   //   setCurrentUser(getUser());
   // }, []);
+=======
+  useEffect(() => {
+    setCurrentUser(getUser());
+  }, []);
+>>>>>>> 718bdf12556d0964b573f1775c7825bf665448cf
 
   const userFirstName = currentUser?.fullName?.split(' ')[0] || currentUser?.email?.split('@')[0] || 'there';
 
@@ -306,6 +317,7 @@ export default function Navbar() {
             {navItems.map(item => (
               <li key={item.href}>
                 {item.hasMega && item.menuName ? (
+<<<<<<< HEAD
                   <span
                     className={activeMenu === item.menuName ? 'active' : ''}
                     style={{
@@ -315,11 +327,21 @@ export default function Navbar() {
                       fontSize: '14px',
                       fontWeight: '500',
                     } as React.CSSProperties}
+=======
+                  <a
+                    href={item.href}
+                    className={activeMenu === item.menuName ? 'active' : ''}
+                    style={{ '--menu-accent': MENU_COLORS[item.menuName] } as React.CSSProperties}
+>>>>>>> 718bdf12556d0964b573f1775c7825bf665448cf
                     onMouseEnter={() => handleMenuEnter(item.menuName!)}
                     onMouseLeave={handleMenuLeave}
                   >
                     {item.label}
+<<<<<<< HEAD
                   </span>
+=======
+                  </a>
+>>>>>>> 718bdf12556d0964b573f1775c7825bf665448cf
                 ) : (
                   <Link href={item.href}>{item.label}</Link>
                 )}
@@ -356,6 +378,7 @@ export default function Navbar() {
               <span style={{ fontSize: '11px', fontWeight: 600, color: profileOpen ? '#ec4899' : '#374151' }}>Profile</span>
             </button>
 
+<<<<<<< HEAD
             {profileOpen && (
               <div style={{
                 position: 'absolute', top: '100%', right: 0,
@@ -380,10 +403,37 @@ export default function Navbar() {
                     <a href="/wishlist" style={dropdownLinkStyle}>❤️ Wishlist</a>
                     <hr style={{ border: 'none', borderTop: '1px solid #f3f4f6', margin: '8px 0' }} />
                     {/* <button
+=======
+          {profileOpen && (
+  <div style={{
+    position: 'absolute', top: '100%', right: 0,
+    background: '#fff', borderRadius: '4px',
+    boxShadow: '0 8px 40px rgba(0,0,0,0.15)',
+    width: '200px', zIndex: 200,
+    borderTop: '3px solid #ec4899',
+    fontFamily: 'DM Sans, sans-serif',
+    padding: '16px',
+  }}>
+    {currentUser ? (
+      // ── LOGGED IN ──
+      <>
+        <div style={{ fontSize: '15px', fontWeight: '700', color: '#111827', marginBottom: '4px' }}>
+          Hi, {userFirstName}! 👋
+        </div>
+        <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '14px' }}>
+          {currentUser?.email ?? 'No email available'}
+        </div>
+        <a href="/my-orders" style={dropdownLinkStyle}>📦 My Orders</a>
+        <a href="/profile" style={dropdownLinkStyle}>👤 Profile</a>
+        <a href="/wishlist" style={dropdownLinkStyle}>❤️ Wishlist</a>
+        <hr style={{ border: 'none', borderTop: '1px solid #f3f4f6', margin: '8px 0' }} />
+        <button
+>>>>>>> 718bdf12556d0964b573f1775c7825bf665448cf
           onClick={() => { logout(); window.location.reload(); }}
           style={{ ...dropdownLinkStyle, color: '#ef4444', width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: '6px 0', fontFamily: 'inherit' }}
         >
           🚪 Logout
+<<<<<<< HEAD
         </button> */}
                   </>
                 ) : (
@@ -409,6 +459,33 @@ export default function Navbar() {
                 )}
               </div>
             )}
+=======
+        </button>
+      </>
+    ) : (
+      // ── NOT LOGGED IN ──
+      <>
+        <div style={{ fontSize: '15px', fontWeight: '700', color: '#111827', marginBottom: '4px' }}>Welcome</div>
+        <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '14px' }}>
+          To access account and manage orders
+        </div>
+        <button
+          onClick={() => { setProfileOpen(false); setAuthModalOpen(true); }}
+          style={{
+            width: '100%', padding: '9px',
+            border: '2px solid #ec4899', color: '#ec4899',
+            borderRadius: '4px', background: 'none',
+            fontWeight: '700', fontSize: '13px',
+            cursor: 'pointer', fontFamily: 'inherit',
+          }}
+        >
+          LOGIN / SIGNUP
+        </button>
+      </>
+    )}
+  </div>
+  )}
+>>>>>>> 718bdf12556d0964b573f1775c7825bf665448cf
           </div>
 
           {/* Cart / Bag */}
@@ -449,6 +526,7 @@ export default function Navbar() {
               <div className="mega-col" key={ci}>
                 {colSections.map(sec => (
                   <div className="mega-section" key={sec.category}>
+<<<<<<< HEAD
                     <a className="mega-category" href={`/${activeMenu}/${sec.category.toLowerCase().replace(/\s+&\s+/g, '-').replace(/[\s,]+/g, '-')}`}>
                       {sec.category}
                     </a>
@@ -457,6 +535,12 @@ export default function Navbar() {
                       <a className="mega-item" key={item} href={`/${activeMenu}/${item.toLowerCase().replace(/\s+&\s+/g, '-').replace(/[\s,]+/g, '-')}`}>
                         {item}
                       </a>
+=======
+                    <a className="mega-category">{sec.category}</a>
+                    {sec.items.length > 0 && <div className="mega-divider" />}
+                    {sec.items.map(item => (
+                      <a className="mega-item" key={item}>{item}</a>
+>>>>>>> 718bdf12556d0964b573f1775c7825bf665448cf
                     ))}
                   </div>
                 ))}
@@ -494,7 +578,11 @@ export default function Navbar() {
       )}
 
       {/* Auth Modal */}
+<<<<<<< HEAD
       {/* <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} /> */}
+=======
+      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+>>>>>>> 718bdf12556d0964b573f1775c7825bf665448cf
     </>
   );
 }

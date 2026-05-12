@@ -228,16 +228,9 @@ export default function Footer() {
         {/* BOTTOM BAR */}
         <div className="footer-bottom">
           <div className="social-links">
-
-            <a href="#" title="Twitter">
-              <img src="/Social.svg" alt="Twitter" style={{ width: '20px', height: '20px', filter: 'brightness(0) invert(1)' }} />
-            </a>
-            <a href="#" title="Instagram">
-              <img src="/Social (1).svg" alt="Instagram" style={{ width: '20px', height: '20px', filter: 'brightness(0) invert(1)' }} />
-            </a>
-            <a href="#" title="Facebook">
-              <img src="/Capa_1.svg" alt="Facebook" style={{ width: '20px', height: '20px', filter: 'brightness(0) invert(1)' }} />
-            </a>
+            <a href="#" title="Facebook">f</a>
+            <a href="#" title="Instagram">📷</a>
+            <a href="#" title="Twitter">𝕏</a>
           </div>
 
           <button
