@@ -1,10 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import Navbar from '@/components/Navbar';
-import { Heart, ChevronDown, ChevronUp, Plus, Minus, SlidersHorizontal } from 'lucide-react';
+import {
+  Heart,
+  ChevronDown,
+  ChevronUp,
+  Plus,
+  Minus,
+  SlidersHorizontal,
+  Loader2,
+} from 'lucide-react';
 
-// ── Types ──────────────────────────────────────────────────────────────────
 export interface Product {
   id: number;
   brand: string;
@@ -13,7 +21,7 @@ export interface Product {
   originalPrice?: number;
   discount?: number;
   offer?: string;
-  image?: string; // optional — show placeholder if not provided
+  image?: string;
 }
 
 export interface FilterSection {
@@ -34,28 +42,15 @@ interface ProductListingPageProps {
   config: CategoryConfig;
 }
 
-// ── Placeholder image box ───────────────────────────────────────────────────
-function ProductImagePlaceholder({ color }: { color: string }) {
-  return (
-    <div style={{
-      width: '100%',
-      aspectRatio: '3/4',
-      background: `linear-gradient(135deg, ${color}18 0%, ${color}30 100%)`,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: '4px',
-    }}>
-      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-        <rect x="8" y="4" width="32" height="40" rx="2" stroke={color} strokeWidth="2" strokeOpacity="0.4" />
-        <circle cx="24" cy="18" r="6" stroke={color} strokeWidth="2" strokeOpacity="0.4" />
-        <path d="M10 38c0-7 28-7 28 0" stroke={color} strokeWidth="2" strokeOpacity="0.4" />
-      </svg>
-    </div>
-  );
-}
+const fallbackImages = [
+  'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=700&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=700&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=700&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=700&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=700&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=700&auto=format&fit=crop',
+];
 
-// ── Single filter section ──────────────────────────────────────────────────
 function FilterItem({
   section,
   accentColor,
@@ -67,348 +62,366 @@ function FilterItem({
   const [selected, setSelected] = useState<string[]>([]);
   const [showAll, setShowAll] = useState(false);
 
-  const visibleOptions = showAll
-    ? (section.options || [])
-    : (section.options || []).slice(0, 5);
+  const options = section.options || [];
+  const visibleOptions = showAll ? options : options.slice(0, 6);
 
-  const toggle = (opt: string) =>
-    setSelected(prev =>
-      prev.includes(opt) ? prev.filter(x => x !== opt) : [...prev, opt]
+  const toggleOption = (option: string) => {
+    setSelected((prev) =>
+      prev.includes(option)
+        ? prev.filter((item) => item !== option)
+        : [...prev, option]
     );
+  };
 
   return (
-    <div style={{ borderBottom: '1px solid #f0f0f0', padding: '14px 0' }}>
+    <div className="border-b border-white/50 py-4">
       <button
-        onClick={() => setOpen(o => !o)}
-        style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          width: '100%', background: 'none', border: 'none', cursor: 'pointer',
-          padding: 0, fontSize: '14px', fontWeight: '600', color: '#1f2937',
-          fontFamily: 'DM Sans, sans-serif',
-        }}
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        className="flex w-full items-center justify-between text-left text-[14px] font-semibold text-gray-800"
       >
         {section.label}
-        {open
-          ? <Minus size={16} color="#9ca3af" />
-          : <Plus size={16} color="#9ca3af" />}
+        {open ? <Minus size={15} /> : <Plus size={15} />}
       </button>
 
-      {open && section.options && section.options.length > 0 && (
-        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {/* Search inside filter */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '8px',
-            background: '#f9fafb', borderRadius: '6px', padding: '6px 10px',
-            marginBottom: '4px',
-          }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-            </svg>
-            <input
-              placeholder="Search"
-              style={{ border: 'none', background: 'none', outline: 'none', fontSize: '12px', color: '#374151', width: '100%', fontFamily: 'DM Sans, sans-serif' }}
-            />
-          </div>
-
-          {visibleOptions.map(opt => (
+      {open && options.length > 0 && (
+        <div className="mt-4 space-y-3">
+          {visibleOptions.map((option) => (
             <label
-              key={opt}
-              style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
+              key={option}
+              className="flex cursor-pointer items-center gap-3 text-[13px] text-gray-700"
             >
-              <div
-                onClick={() => toggle(opt)}
+              <button
+                type="button"
+                onClick={() => toggleOption(option)}
+                className="flex h-4 w-4 shrink-0 items-center justify-center rounded border"
                 style={{
-                  width: '16px', height: '16px', borderRadius: '3px',
-                  border: `2px solid ${selected.includes(opt) ? accentColor : '#d1d5db'}`,
-                  background: selected.includes(opt) ? accentColor : '#fff',
-                  flexShrink: 0, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  borderColor: selected.includes(option) ? accentColor : '#d1d5db',
+                  backgroundColor: selected.includes(option) ? accentColor : '#ffffff',
                 }}
               >
-                {selected.includes(opt) && (
-                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                    <path d="M2 5l2 2 4-4" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
-                  </svg>
+                {selected.includes(option) && (
+                  <span className="text-[10px] font-bold text-white">✓</span>
                 )}
-              </div>
-              <span style={{ fontSize: '13px', color: '#374151' }}>{opt}</span>
+              </button>
+
+              <span className="truncate">{option}</span>
             </label>
           ))}
 
-          {(section.options.length > 5) && (
+          {options.length > 6 && (
             <button
-              onClick={() => setShowAll(s => !s)}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: accentColor, fontSize: '12px', fontWeight: '600',
-                textAlign: 'left', padding: '4px 0', fontFamily: 'DM Sans, sans-serif',
-              }}
+              type="button"
+              onClick={() => setShowAll((value) => !value)}
+              className="text-[12px] font-bold"
+              style={{ color: accentColor }}
             >
-              {showAll
-                ? 'SHOW LESS'
-                : `SEE MORE (${section.options.length - 5})`}
+              {showAll ? 'SHOW LESS' : `SEE MORE (${options.length - 6})`}
             </button>
           )}
         </div>
       )}
 
-      {/* Price range special case */}
-      {open && section.label === 'Price' && !section.options && (
-        <div style={{ marginTop: '12px' }}>
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
-            {['Min. Amount', 'Max. Amount'].map((placeholder, i) => (
-              <input
-                key={i}
-                type="number"
-                placeholder={placeholder}
-                defaultValue={i === 0 ? 100 : 10000}
-                style={{
-                  flex: 1, padding: '8px', border: '1px solid #e5e7eb',
-                  borderRadius: '4px', fontSize: '13px', fontFamily: 'DM Sans, sans-serif',
-                  outline: 'none', color: '#1f2937',
-                }}
-              />
-            ))}
+      {open && section.label.toLowerCase() === 'price' && options.length === 0 && (
+        <div className="mt-4">
+          <div className="mb-3 flex gap-2">
+            <input
+              type="number"
+              placeholder="Min"
+              defaultValue={100}
+              className="w-full rounded-lg border border-gray-200 bg-white/80 px-3 py-2 text-[12px] text-gray-800 outline-none"
+            />
+            <input
+              type="number"
+              placeholder="Max"
+              defaultValue={10000}
+              className="w-full rounded-lg border border-gray-200 bg-white/80 px-3 py-2 text-[12px] text-gray-800 outline-none"
+            />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#6b7280', marginBottom: '6px' }}>
-            <span>₹100</span><span>₹10000</span>
-          </div>
-          <input type="range" min={100} max={10000} defaultValue={5000}
-            style={{ width: '100%', accentColor }} />
+
+          <input
+            type="range"
+            min={100}
+            max={10000}
+            defaultValue={5000}
+            className="w-full"
+            style={{ accentColor }}
+          />
         </div>
       )}
     </div>
   );
 }
 
-// ── Product Card ───────────────────────────────────────────────────────────
-function ProductCard({ product, accentColor }: { product: Product; accentColor: string }) {
+function ProductCard({
+  product,
+  accentColor,
+  image,
+}: {
+  product: Product;
+  accentColor: string;
+  image: string;
+}) {
   const [liked, setLiked] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   return (
-    <div style={{ cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>
-      <div style={{ position: 'relative' }}>
-        {product.image
-          ? <img src={product.image} alt={product.brand} style={{ width: '100%', aspectRatio: '3/4', objectFit: 'cover', borderRadius: '4px', display: 'block' }} />
-          : <ProductImagePlaceholder color={accentColor} />
-        }
-        <button
-          onClick={() => setLiked(l => !l)}
-          style={{
-            position: 'absolute', top: '8px', right: '8px',
-            background: 'rgba(255,255,255,0.9)', border: 'none', borderRadius: '50%',
-            width: '32px', height: '32px', display: 'flex', alignItems: 'center',
-            justifyContent: 'center', cursor: 'pointer',
-          }}
-        >
-          <Heart size={16} fill={liked ? '#ef4444' : 'none'} color={liked ? '#ef4444' : '#6b7280'} />
-        </button>
-        {product.discount && (
-          <div style={{
-            position: 'absolute', top: '8px', left: '8px',
-            background: accentColor, color: '#fff',
-            fontSize: '11px', fontWeight: '700', padding: '2px 6px', borderRadius: '3px',
-          }}>
-            {product.discount}% OFF
+    <Link href={`/product/${product.id}`} className="group block">
+      <div className="relative overflow-hidden rounded-md bg-pink-50">
+        {!loaded && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-pink-50">
+            <Loader2 className="animate-spin text-pink-400" size={24} />
           </div>
         )}
+
+        <img
+          src={product.image || image}
+          alt={product.brand}
+          loading="lazy"
+          onLoad={() => setLoaded(true)}
+          className="aspect-[3/4] w-full object-cover transition duration-500 group-hover:scale-105"
+        />
+
+        {product.discount && (
+          <span
+            className="absolute left-2 top-2 rounded px-2 py-1 text-[11px] font-bold text-white"
+            style={{ backgroundColor: accentColor }}
+          >
+            {product.discount}% OFF
+          </span>
+        )}
+
+        <button
+          type="button"
+          onClick={(event) => {
+            event.preventDefault();
+            setLiked((value) => !value);
+          }}
+          className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur"
+        >
+          <Heart
+            size={17}
+            color={liked ? '#ef4444' : '#6b7280'}
+            fill={liked ? '#ef4444' : 'none'}
+          />
+        </button>
       </div>
-      <div style={{ padding: '8px 2px 4px' }}>
-        <div style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937' }}>{product.brand}</div>
-        <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.description}</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
-          <span style={{ fontSize: '14px', fontWeight: '700', color: '#1f2937' }}>₹{product.price}</span>
+
+      <div className="pt-3">
+        <h3 className="w-full truncate font-satoshi-medium text-[11px] font-bold text-primaryBrown-600 md:text-[13px] select-none md:select-text">
+          {product.brand}
+        </h3>
+
+        <p className="mt-1 w-full truncate font-satoshi-medium text-[11px] text-primaryBrown-600 md:text-[13px] select-none md:select-text">
+          {product.description}
+        </p>
+
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="text-[13px] font-bold text-gray-950 md:text-[14px]">
+            ₹{product.price}
+          </span>
+
           {product.originalPrice && (
-            <span style={{ fontSize: '12px', color: '#9ca3af', textDecoration: 'line-through' }}>₹{product.originalPrice}</span>
+            <span className="text-[11px] text-gray-400 line-through md:text-[12px]">
+              ₹{product.originalPrice}
+            </span>
           )}
+
           {product.discount && (
-            <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: '600' }}>{product.discount}% Off</span>
+            <span className="text-[11px] font-bold text-emerald-600 md:text-[12px]">
+              {product.discount}% Off
+            </span>
           )}
         </div>
-        {product.offer && (
-          <div style={{ fontSize: '11px', color: accentColor, fontWeight: '600', marginTop: '3px' }}>{product.offer}</div>
-        )}
       </div>
-    </div>
+    </Link>
   );
 }
-
-// ── Main Component ─────────────────────────────────────────────────────────
-const PRODUCTS_PER_PAGE = 10;
 
 export default function ProductListingPage({ config }: ProductListingPageProps) {
   const [sortOpen, setSortOpen] = useState(false);
   const [sortBy, setSortBy] = useState('Popularity');
-  const [currentPage, setCurrentPage] = useState(1);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
-  const totalPages = Math.ceil(config.products.length / PRODUCTS_PER_PAGE);
-  const paginatedProducts = config.products.slice(
-    (currentPage - 1) * PRODUCTS_PER_PAGE,
-    currentPage * PRODUCTS_PER_PAGE
-  );
+  const sortOptions = [
+    'Popularity',
+    'New Arrivals',
+    'Discount',
+    'Price Low to High',
+    'Price High to Low',
+  ];
 
-  const sortOptions = ['Popularity', 'New', 'Discount', 'Price Low to High', 'Price High to Low'];
+  const products = useMemo(() => {
+    const list = [...config.products];
+
+    if (sortBy === 'Price Low to High') {
+      list.sort((a, b) => a.price - b.price);
+    }
+
+    if (sortBy === 'Price High to Low') {
+      list.sort((a, b) => b.price - a.price);
+    }
+
+    if (sortBy === 'Discount') {
+      list.sort((a, b) => (b.discount || 0) - (a.discount || 0));
+    }
+
+    return list;
+  }, [config.products, sortBy]);
 
   return (
     <>
       <Navbar />
-      <div style={{ paddingTop: '80px', minHeight: '100vh', background: '#fff', fontFamily: 'DM Sans, sans-serif' }}>
 
-        {/* Breadcrumb */}
-        <div style={{ padding: '12px 24px', fontSize: '12px', color: '#6b7280', borderBottom: '1px solid #f3f4f6' }}>
-          <span>Home</span>
-          <span style={{ margin: '0 6px' }}>/</span>
-          <span>{config.title.split(' ')[0]}</span>
-          <span style={{ margin: '0 6px' }}>/</span>
-          <span style={{ color: '#1f2937', fontWeight: '600' }}>{config.title}</span>
+      <div className="min-h-screen bg-gradient-to-br from-white via-pink-50/20 to-white pt-[92px]">
+        <div className="border-b border-pink-100/70 bg-white/70 px-6 py-3 text-[12px] text-gray-500 backdrop-blur-xl">
+          Home / Men /{' '}
+          <span className="font-semibold text-gray-900">{config.title}</span>
         </div>
 
-        <div style={{ display: 'flex', maxWidth: '1400px', margin: '0 auto' }}>
+        <div className="mx-auto flex max-w-[1500px] gap-6 px-4 py-6 md:px-6">
+          <aside className="sticky top-[105px] hidden h-[calc(100vh-120px)] w-[280px] shrink-0 overflow-y-auto rounded-[28px] border border-white/70 bg-white/60 p-5 shadow-[0_20px_60px_rgba(236,72,153,0.13)] backdrop-blur-2xl lg:block">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal size={18} />
+                <h2 className="text-[18px] font-bold text-gray-900">Filters</h2>
+              </div>
 
-          {/* ── Filter Sidebar ── */}
-          <aside style={{
-            width: '260px', flexShrink: 0, padding: '24px 20px',
-            borderRight: '1px solid #f3f4f6', position: 'sticky',
-            top: '80px', height: 'calc(100vh - 80px)', overflowY: 'auto',
-          }}>
-            <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: '16px' }}>Filters</div>
-            {config.filters.map(f => (
-              <FilterItem key={f.label} section={f} accentColor={config.accentColor} />
+              <button
+                type="button"
+                className="text-[12px] font-bold"
+                style={{ color: config.accentColor }}
+              >
+                Clear
+              </button>
+            </div>
+
+            {config.filters.map((filter) => (
+              <FilterItem
+                key={filter.label}
+                section={filter}
+                accentColor={config.accentColor}
+              />
             ))}
           </aside>
 
-          {/* ── Main Content ── */}
-          <main style={{ flex: 1, padding: '24px 28px' }}>
-
-            {/* Title + Sort */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+          <main className="flex-1">
+            <div className="mb-5 flex flex-col gap-4 rounded-[24px] border border-white/70 bg-white/70 p-4 shadow-sm backdrop-blur-xl md:flex-row md:items-center md:justify-between">
               <div>
-                <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#1f2937', margin: 0 }}>{config.title}</h1>
-                <p style={{ fontSize: '13px', color: '#6b7280', margin: '4px 0 0' }}>{config.totalProducts.toLocaleString()} Products</p>
+                <h1 className="text-[22px] font-bold text-gray-950">
+                  {config.title}
+                </h1>
+                <p className="mt-1 text-[13px] text-gray-500">
+                  {config.totalProducts.toLocaleString()} Products
+                </p>
               </div>
 
-              {/* Sort */}
-              <div style={{ position: 'relative' }}>
+              <div className="flex items-center gap-3">
                 <button
-                  onClick={() => setSortOpen(o => !o)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '8px',
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    fontSize: '14px', color: '#1f2937', fontFamily: 'DM Sans, sans-serif',
-                  }}
+                  type="button"
+                  onClick={() => setMobileFilterOpen(true)}
+                  className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-[13px] font-semibold lg:hidden"
                 >
-                  <span style={{ color: '#6b7280' }}>Sort By</span>
-                  <span style={{ fontWeight: '600' }}>{sortBy}</span>
-                  {sortOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  <SlidersHorizontal size={16} />
+                  Filters
                 </button>
-                {sortOpen && (
-                  <div style={{
-                    position: 'absolute', top: '100%', right: 0,
-                    background: '#fff', boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-                    borderRadius: '4px', zIndex: 50, minWidth: '180px', padding: '8px 0',
-                  }}>
-                    {sortOptions.map(opt => (
-                      <button
-                        key={opt}
-                        onClick={() => { setSortBy(opt); setSortOpen(false); }}
-                        style={{
-                          display: 'block', width: '100%', padding: '10px 20px',
-                          background: sortBy === opt ? `${config.accentColor}10` : 'none',
-                          border: 'none', cursor: 'pointer', textAlign: 'left',
-                          fontSize: '13px', color: sortBy === opt ? config.accentColor : '#374151',
-                          fontWeight: sortBy === opt ? '600' : '400',
-                          fontFamily: 'DM Sans, sans-serif',
-                        }}
-                      >
-                        {opt}
-                      </button>
-                    ))}
-                  </div>
-                )}
+
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setSortOpen((value) => !value)}
+                    className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-[13px]"
+                  >
+                    <span className="text-gray-500">Sort By</span>
+                    <span className="font-bold text-gray-900">{sortBy}</span>
+                    {sortOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                  </button>
+
+                  {sortOpen && (
+                    <div className="absolute right-0 top-12 z-40 w-[210px] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl">
+                      {sortOptions.map((option) => (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => {
+                            setSortBy(option);
+                            setSortOpen(false);
+                          }}
+                          className="block w-full px-5 py-3 text-left text-[13px] hover:bg-pink-50"
+                          style={{
+                            color:
+                              sortBy === option ? config.accentColor : '#374151',
+                            fontWeight: sortBy === option ? 700 : 500,
+                          }}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Brand chips */}
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
-              {config.brands.map(brand => (
+            <div className="mb-6 flex flex-wrap gap-3">
+              {config.brands.map((brand) => (
                 <button
                   key={brand}
-                  style={{
-                    padding: '5px 14px', borderRadius: '999px',
-                    border: '1px solid #e5e7eb', background: '#fff',
-                    fontSize: '12px', color: '#374151', cursor: 'pointer',
-                    fontFamily: 'DM Sans, sans-serif',
-                    transition: 'border-color 0.2s, color 0.2s',
-                  }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = config.accentColor; (e.currentTarget as HTMLButtonElement).style.color = config.accentColor; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#e5e7eb'; (e.currentTarget as HTMLButtonElement).style.color = '#374151'; }}
+                  type="button"
+                  className="rounded-full border border-gray-200 bg-white/80 px-4 py-2 text-[12px] font-medium text-gray-700 shadow-sm backdrop-blur transition hover:border-pink-400 hover:text-pink-600"
                 >
                   {brand}
                 </button>
               ))}
             </div>
 
-            {/* Product Grid */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
-              gap: '20px',
-              marginBottom: '40px',
-            }}>
-              {paginatedProducts.map(product => (
-                <ProductCard key={product.id} product={product} accentColor={config.accentColor} />
+            <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+              {products.map((product, index) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  accentColor={config.accentColor}
+                  image={fallbackImages[index % fallbackImages.length]}
+                />
               ))}
             </div>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', paddingBottom: '40px' }}>
-                <button
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  style={{
-                    padding: '8px 16px', border: '1px solid #e5e7eb', borderRadius: '4px',
-                    background: '#fff', cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                    color: currentPage === 1 ? '#d1d5db' : '#374151', fontSize: '13px',
-                    fontFamily: 'DM Sans, sans-serif',
-                  }}
-                >
-                  ←
-                </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    style={{
-                      width: '36px', height: '36px', border: '1px solid',
-                      borderColor: currentPage === page ? config.accentColor : '#e5e7eb',
-                      borderRadius: '4px', cursor: 'pointer', fontSize: '13px',
-                      background: currentPage === page ? config.accentColor : '#fff',
-                      color: currentPage === page ? '#fff' : '#374151',
-                      fontWeight: currentPage === page ? '700' : '400',
-                      fontFamily: 'DM Sans, sans-serif',
-                    }}
-                  >
-                    {page}
-                  </button>
-                ))}
-                <button
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  style={{
-                    padding: '8px 16px', border: '1px solid #e5e7eb', borderRadius: '4px',
-                    background: '#fff', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-                    color: currentPage === totalPages ? '#d1d5db' : '#374151', fontSize: '13px',
-                    fontFamily: 'DM Sans, sans-serif',
-                  }}
-                >
-                  →
-                </button>
+            <div className="flex justify-center py-12">
+              <div className="flex items-center gap-2 rounded-full bg-white/80 px-5 py-3 text-[13px] font-semibold text-gray-500 shadow-sm backdrop-blur">
+                <span className="h-2 w-2 animate-bounce rounded-full bg-pink-500" />
+                <span className="h-2 w-2 animate-bounce rounded-full bg-pink-400 [animation-delay:120ms]" />
+                <span className="h-2 w-2 animate-bounce rounded-full bg-pink-300 [animation-delay:240ms]" />
+                All products loaded
               </div>
-            )}
+            </div>
           </main>
         </div>
+
+        {mobileFilterOpen && (
+          <div className="fixed inset-0 z-[200] bg-black/40 lg:hidden">
+            <div className="h-full w-[85%] max-w-[340px] overflow-y-auto bg-white p-5">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-lg font-bold">Filters</h2>
+
+                <button
+                  type="button"
+                  onClick={() => setMobileFilterOpen(false)}
+                  className="text-sm font-bold text-pink-600"
+                >
+                  Close
+                </button>
+              </div>
+
+              {config.filters.map((filter) => (
+                <FilterItem
+                  key={filter.label}
+                  section={filter}
+                  accentColor={config.accentColor}
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

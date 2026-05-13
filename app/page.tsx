@@ -476,7 +476,7 @@ export default function Home() {
               Get everything you need to build, run and scale your business on one eCommerce platform. Fast, simple, and personalized for modern users.
             </p>
             <div className="hero-actions">
-              <a href="/products" className="btn-primary">Shop Now →</a>
+              <a href="/explore" className="btn-primary">Shop Now →</a>
             </div>
             <div className="hero-pills">
               <div className="pill"><span>⚡</span> Fast</div>
