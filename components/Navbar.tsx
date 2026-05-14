@@ -16,16 +16,16 @@ const dropdownLinkStyle: React.CSSProperties = {
 };
 
 const MEN_MENU = [
-  { category: 'Topwear', items: ['T-Shirts', 'Casual Shirts', 'Formal Shirts', 'Sweatshirts', 'Sweaters', 'Jackets', 'Blazers & Coats', 'Suits', 'Rain Jackets'] },
-  { category: 'Indian & Festive Wear', items: ['Kurtas & Kurta Sets', 'Sherwanis', 'Nehru Jackets', 'Dhotis'] },
-  { category: 'Bottomwear', items: ['Jeans', 'Casual Trousers', 'Formal Trousers', 'Shorts', 'Track Pants & Joggers'] },
+  { category: 'Topwear', items: ['T-Shirts', 'Casual Shirts', 'Formal Shirts', 'Sweatshirts', 'Jackets', 'Blazers & Coats', 'Suits'] },
+  { category: 'Indian & Festive Wear', items: ['Kurtas & Kurta Sets', 'Sherwanis', 'Nehru Jackets',] },
+  { category: 'Bottomwear', items: ['Jeans', 'Formal Trousers', 'Shorts', 'Track Pants & Joggers'] },
   { category: 'Innerwear & Sleepwear', items: ['Briefs & Trunks', 'Boxers', 'Vests', 'Sleepwear & Loungewear', 'Thermals'] },
   { category: 'Plus Size', items: [], isLink: true },
-  { category: 'Footwear', items: ['Casual Shoes', 'Sports Shoes', 'Formal Shoes', 'Sneakers', 'Sandals & Floaters', 'Flip Flops', 'Socks'] },
+  { category: 'Footwear', items: ['Casual Shoes','Formal Shoes', 'Sneakers','Socks'] },
   { category: 'Personal Care & Grooming', items: [], isLink: true },
   { category: 'Sunglasses & Frames', items: [], isLink: true },
   { category: 'Watches', items: [], isLink: true },
-  { category: 'Sports & Active Wear', items: ['Sports Shoes', 'Sports Sandals', 'Active T-Shirts', 'Track Pants & Shorts', 'Tracksuits', 'Jackets & Sweatshirts', 'Sports Accessories', 'Swimwear'] },
+  { category: 'Sports & Active Wear', items: ['Sports Shoes', 'Active T-Shirts','Sports Accessories', 'Swimwear'] },
   { category: 'Fashion Accessories', items: ['Wallets', 'Belts', 'Perfumes & Body Mists'] },
 ];
 

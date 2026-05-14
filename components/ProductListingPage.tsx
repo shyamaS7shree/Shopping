@@ -10,7 +10,7 @@ import {
   Plus,
   Minus,
   SlidersHorizontal,
-  Loader2,
+  PackageSearch,
 } from 'lucide-react';
 
 export interface Product {
@@ -21,7 +21,6 @@ export interface Product {
   originalPrice?: number;
   discount?: number;
   offer?: string;
-  image?: string;
 }
 
 export interface FilterSection {
@@ -42,42 +41,30 @@ interface ProductListingPageProps {
   config: CategoryConfig;
 }
 
-const fallbackImages = [
-  'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=700&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=700&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=700&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=700&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=700&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=700&auto=format&fit=crop',
-];
+// ─── Filter Item ────────────────────────────────────────────────────────────
 
 function FilterItem({
   section,
   accentColor,
+  selectedOptions,
+  onToggle,
 }: {
   section: FilterSection;
   accentColor: string;
+  selectedOptions: string[];
+  onToggle: (option: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState<string[]>([]);
   const [showAll, setShowAll] = useState(false);
 
   const options = section.options || [];
   const visibleOptions = showAll ? options : options.slice(0, 6);
 
-  const toggleOption = (option: string) => {
-    setSelected((prev) =>
-      prev.includes(option)
-        ? prev.filter((item) => item !== option)
-        : [...prev, option]
-    );
-  };
-
   return (
-    <div className="border-b border-white/50 py-4">
+    <div className="border-b border-gray-100 py-4">
       <button
         type="button"
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center justify-between text-left text-[14px] font-semibold text-gray-800"
       >
         {section.label}
@@ -86,33 +73,35 @@ function FilterItem({
 
       {open && options.length > 0 && (
         <div className="mt-4 space-y-3">
-          {visibleOptions.map((option) => (
-            <label
-              key={option}
-              className="flex cursor-pointer items-center gap-3 text-[13px] text-gray-700"
-            >
-              <button
-                type="button"
-                onClick={() => toggleOption(option)}
-                className="flex h-4 w-4 shrink-0 items-center justify-center rounded border"
-                style={{
-                  borderColor: selected.includes(option) ? accentColor : '#d1d5db',
-                  backgroundColor: selected.includes(option) ? accentColor : '#ffffff',
-                }}
+          {visibleOptions.map((option) => {
+            const checked = selectedOptions.includes(option);
+            return (
+              <label
+                key={option}
+                className="flex cursor-pointer items-center gap-3 text-[13px] text-gray-700"
               >
-                {selected.includes(option) && (
-                  <span className="text-[10px] font-bold text-white">✓</span>
-                )}
-              </button>
-
-              <span className="truncate">{option}</span>
-            </label>
-          ))}
+                <button
+                  type="button"
+                  onClick={() => onToggle(option)}
+                  className="flex h-4 w-4 shrink-0 items-center justify-center rounded border transition"
+                  style={{
+                    borderColor: checked ? accentColor : '#d1d5db',
+                    backgroundColor: checked ? accentColor : '#ffffff',
+                  }}
+                >
+                  {checked && (
+                    <span className="text-[10px] font-bold text-white">✓</span>
+                  )}
+                </button>
+                <span className="truncate">{option}</span>
+              </label>
+            );
+          })}
 
           {options.length > 6 && (
             <button
               type="button"
-              onClick={() => setShowAll((value) => !value)}
+              onClick={() => setShowAll((v) => !v)}
               className="text-[12px] font-bold"
               style={{ color: accentColor }}
             >
@@ -129,16 +118,15 @@ function FilterItem({
               type="number"
               placeholder="Min"
               defaultValue={100}
-              className="w-full rounded-lg border border-gray-200 bg-white/80 px-3 py-2 text-[12px] text-gray-800 outline-none"
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-[12px] text-gray-800 outline-none"
             />
             <input
               type="number"
               placeholder="Max"
               defaultValue={10000}
-              className="w-full rounded-lg border border-gray-200 bg-white/80 px-3 py-2 text-[12px] text-gray-800 outline-none"
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-[12px] text-gray-800 outline-none"
             />
           </div>
-
           <input
             type="range"
             min={100}
@@ -153,34 +141,25 @@ function FilterItem({
   );
 }
 
+// ─── Product Card (no image) ─────────────────────────────────────────────────
+
 function ProductCard({
   product,
   accentColor,
-  image,
 }: {
   product: Product;
   accentColor: string;
-  image: string;
 }) {
   const [liked, setLiked] = useState(false);
-  const [loaded, setLoaded] = useState(false);
 
   return (
     <Link href={`/product/${product.id}`} className="group block">
-      <div className="relative overflow-hidden rounded-md bg-pink-50">
-        {!loaded && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-pink-50">
-            <Loader2 className="animate-spin text-pink-400" size={24} />
-          </div>
-        )}
-
-        <img
-          src={product.image || image}
-          alt={product.brand}
-          loading="lazy"
-          onLoad={() => setLoaded(true)}
-          className="aspect-[3/4] w-full object-cover transition duration-500 group-hover:scale-105"
-        />
+      {/* Placeholder card instead of image */}
+      <div className="relative flex aspect-[3/4] w-full items-center justify-center overflow-hidden rounded-xl bg-gray-100">
+        <div className="flex flex-col items-center gap-2 text-center px-4">
+          <span className="text-[13px] font-bold text-gray-500">{product.brand}</span>
+          <span className="text-[11px] text-gray-400 leading-snug">{product.description}</span>
+        </div>
 
         {product.discount && (
           <span
@@ -193,11 +172,11 @@ function ProductCard({
 
         <button
           type="button"
-          onClick={(event) => {
-            event.preventDefault();
-            setLiked((value) => !value);
+          onClick={(e) => {
+            e.preventDefault();
+            setLiked((v) => !v);
           }}
-          className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur"
+          className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm"
         >
           <Heart
             size={17}
@@ -208,25 +187,21 @@ function ProductCard({
       </div>
 
       <div className="pt-3">
-        <h3 className="w-full truncate font-satoshi-medium text-[11px] font-bold text-primaryBrown-600 md:text-[13px] select-none md:select-text">
+        <h3 className="truncate text-[11px] font-bold text-gray-900 md:text-[13px]">
           {product.brand}
         </h3>
-
-        <p className="mt-1 w-full truncate font-satoshi-medium text-[11px] text-primaryBrown-600 md:text-[13px] select-none md:select-text">
+        <p className="mt-1 truncate text-[11px] text-gray-500 md:text-[12px]">
           {product.description}
         </p>
-
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <span className="text-[13px] font-bold text-gray-950 md:text-[14px]">
             ₹{product.price}
           </span>
-
           {product.originalPrice && (
             <span className="text-[11px] text-gray-400 line-through md:text-[12px]">
               ₹{product.originalPrice}
             </span>
           )}
-
           {product.discount && (
             <span className="text-[11px] font-bold text-emerald-600 md:text-[12px]">
               {product.discount}% Off
@@ -238,10 +213,18 @@ function ProductCard({
   );
 }
 
+// ─── Main Page ───────────────────────────────────────────────────────────────
+
 export default function ProductListingPage({ config }: ProductListingPageProps) {
   const [sortOpen, setSortOpen] = useState(false);
   const [sortBy, setSortBy] = useState('Popularity');
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+
+  // Global filter state: map of filterLabel -> selected options[]
+  const [filterSelections, setFilterSelections] = useState<Record<string, string[]>>({});
+
+  // Active brand pills
+  const [activeBrands, setActiveBrands] = useState<string[]>([]);
 
   const sortOptions = [
     'Popularity',
@@ -251,72 +234,120 @@ export default function ProductListingPage({ config }: ProductListingPageProps) 
     'Price High to Low',
   ];
 
+  // Toggle a filter option
+  const toggleFilterOption = (label: string, option: string) => {
+    setFilterSelections((prev) => {
+      const existing = prev[label] || [];
+      const updated = existing.includes(option)
+        ? existing.filter((o) => o !== option)
+        : [...existing, option];
+      return { ...prev, [label]: updated };
+    });
+  };
+
+  // Clear all filters
+  const clearAllFilters = () => {
+    setFilterSelections({});
+    setActiveBrands([]);
+  };
+
+  // Toggle brand pill
+  const toggleBrand = (brand: string) => {
+    setActiveBrands((prev) =>
+      prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]
+    );
+  };
+
+  const hasActiveFilters =
+    activeBrands.length > 0 ||
+    Object.values(filterSelections).some((v) => v.length > 0);
+
+  // Build filtered + sorted product list
   const products = useMemo(() => {
-    const list = [...config.products];
+    let list = [...config.products];
 
-    if (sortBy === 'Price Low to High') {
-      list.sort((a, b) => a.price - b.price);
+    // Filter by active brand pills
+    if (activeBrands.length > 0) {
+      list = list.filter((p) => activeBrands.includes(p.brand));
     }
 
-    if (sortBy === 'Price High to Low') {
-      list.sort((a, b) => b.price - a.price);
+    // Filter by sidebar brand selections
+    const selectedBrands = filterSelections['Brands'] || [];
+    if (selectedBrands.length > 0) {
+      list = list.filter((p) => selectedBrands.includes(p.brand));
     }
 
-    if (sortBy === 'Discount') {
-      list.sort((a, b) => (b.discount || 0) - (a.discount || 0));
-    }
+    // Sort
+    if (sortBy === 'Price Low to High') list.sort((a, b) => a.price - b.price);
+    if (sortBy === 'Price High to Low') list.sort((a, b) => b.price - a.price);
+    if (sortBy === 'Discount') list.sort((a, b) => (b.discount || 0) - (a.discount || 0));
 
     return list;
-  }, [config.products, sortBy]);
+  }, [config.products, sortBy, activeBrands, filterSelections]);
+
+  const FilterPanel = () => (
+    <>
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <SlidersHorizontal size={18} />
+          <h2 className="text-[18px] font-bold text-gray-900">Filters</h2>
+        </div>
+        {hasActiveFilters && (
+          <button
+            type="button"
+            onClick={clearAllFilters}
+            className="text-[12px] font-bold"
+            style={{ color: config.accentColor }}
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
+      {config.filters.map((filter) => (
+        <FilterItem
+          key={filter.label}
+          section={filter}
+          accentColor={config.accentColor}
+          selectedOptions={filterSelections[filter.label] || []}
+          onToggle={(option) => toggleFilterOption(filter.label, option)}
+        />
+      ))}
+    </>
+  );
 
   return (
     <>
       <Navbar />
 
-      <div className="min-h-screen bg-gradient-to-br from-white via-pink-50/20 to-white pt-[92px]">
-        <div className="border-b border-pink-100/70 bg-white/70 px-6 py-3 text-[12px] text-gray-500 backdrop-blur-xl">
+      <div className="min-h-screen bg-white pt-[92px]">
+        {/* Breadcrumb — normal flow, right below navbar offset */}
+        <div className="bg-white px-6 pb-2 text-[14px] text-gray-500">
           Home / Men /{' '}
           <span className="font-semibold text-gray-900">{config.title}</span>
         </div>
 
-        <div className="mx-auto flex max-w-[1500px] gap-6 px-4 py-6 md:px-6">
-          <aside className="sticky top-[105px] hidden h-[calc(100vh-120px)] w-[280px] shrink-0 overflow-y-auto rounded-[28px] border border-white/70 bg-white/60 p-5 shadow-[0_20px_60px_rgba(236,72,153,0.13)] backdrop-blur-2xl lg:block">
-            <div className="mb-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <SlidersHorizontal size={18} />
-                <h2 className="text-[18px] font-bold text-gray-900">Filters</h2>
-              </div>
-
-              <button
-                type="button"
-                className="text-[12px] font-bold"
-                style={{ color: config.accentColor }}
-              >
-                Clear
-              </button>
-            </div>
-
-            {config.filters.map((filter) => (
-              <FilterItem
-                key={filter.label}
-                section={filter}
-                accentColor={config.accentColor}
-              />
-            ))}
+        <div className="mx-auto flex max-w-[1500px] gap-6 px-4 py-4 md:px-6">
+          {/* Sidebar — sticky starts below navbar+breadcrumb = 92+37=129px */}
+          <aside className="sticky top-[110px] hidden h-[calc(100vh-110px)] w-[260px] shrink-0 overflow-y-auto lg:block">
+            <FilterPanel />
           </aside>
 
+          {/* ── Main Content ── */}
           <main className="flex-1">
-            <div className="mb-5 flex flex-col gap-4 rounded-[24px] border border-white/70 bg-white/70 p-4 shadow-sm backdrop-blur-xl md:flex-row md:items-center md:justify-between">
+            {/* Title + Sort — no box, just a plain row */}
+            <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
                 <h1 className="text-[22px] font-bold text-gray-950">
                   {config.title}
                 </h1>
-                <p className="mt-1 text-[13px] text-gray-500">
-                  {config.totalProducts.toLocaleString()} Products
+                <p className="mt-0.5 text-[13px] text-gray-500">
+                  {products.length.toLocaleString()} Products
                 </p>
               </div>
 
               <div className="flex items-center gap-3">
+                {/* Mobile filter trigger */}
                 <button
                   type="button"
                   onClick={() => setMobileFilterOpen(true)}
@@ -326,10 +357,11 @@ export default function ProductListingPage({ config }: ProductListingPageProps) 
                   Filters
                 </button>
 
+                {/* Sort dropdown */}
                 <div className="relative">
                   <button
                     type="button"
-                    onClick={() => setSortOpen((value) => !value)}
+                    onClick={() => setSortOpen((v) => !v)}
                     className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-[13px]"
                   >
                     <span className="text-gray-500">Sort By</span>
@@ -349,8 +381,7 @@ export default function ProductListingPage({ config }: ProductListingPageProps) 
                           }}
                           className="block w-full px-5 py-3 text-left text-[13px] hover:bg-pink-50"
                           style={{
-                            color:
-                              sortBy === option ? config.accentColor : '#374151',
+                            color: sortBy === option ? config.accentColor : '#374151',
                             fontWeight: sortBy === option ? 700 : 500,
                           }}
                         >
@@ -363,50 +394,81 @@ export default function ProductListingPage({ config }: ProductListingPageProps) 
               </div>
             </div>
 
-            <div className="mb-6 flex flex-wrap gap-3">
-              {config.brands.map((brand) => (
+            {/* Brand pills */}
+            <div className="mb-6 flex flex-wrap gap-2">
+              {config.brands.map((brand) => {
+                const active = activeBrands.includes(brand);
+                return (
+                  <button
+                    key={brand}
+                    type="button"
+                    onClick={() => toggleBrand(brand)}
+                    className="rounded-full border px-4 py-1.5 text-[12px] font-medium transition"
+                    style={{
+                      borderColor: active ? config.accentColor : '#e5e7eb',
+                      backgroundColor: active ? config.accentColor : '#ffffff',
+                      color: active ? '#ffffff' : '#374151',
+                    }}
+                  >
+                    {brand}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Product grid or No Results */}
+            {products.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 text-center">
+                <PackageSearch size={48} className="mb-4 text-gray-300" />
+                <h3 className="text-[18px] font-bold text-gray-700">No results found</h3>
+                <p className="mt-2 text-[13px] text-gray-400">
+                  Try adjusting your filters or clearing them to see more products.
+                </p>
                 <button
-                  key={brand}
                   type="button"
-                  className="rounded-full border border-gray-200 bg-white/80 px-4 py-2 text-[12px] font-medium text-gray-700 shadow-sm backdrop-blur transition hover:border-pink-400 hover:text-pink-600"
+                  onClick={clearAllFilters}
+                  className="mt-5 rounded-full px-6 py-2 text-[13px] font-bold text-white transition"
+                  style={{ backgroundColor: config.accentColor }}
                 >
-                  {brand}
+                  Clear All Filters
                 </button>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-              {products.map((product, index) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  accentColor={config.accentColor}
-                  image={fallbackImages[index % fallbackImages.length]}
-                />
-              ))}
-            </div>
-
-            <div className="flex justify-center py-12">
-              <div className="flex items-center gap-2 rounded-full bg-white/80 px-5 py-3 text-[13px] font-semibold text-gray-500 shadow-sm backdrop-blur">
-                <span className="h-2 w-2 animate-bounce rounded-full bg-pink-500" />
-                <span className="h-2 w-2 animate-bounce rounded-full bg-pink-400 [animation-delay:120ms]" />
-                <span className="h-2 w-2 animate-bounce rounded-full bg-pink-300 [animation-delay:240ms]" />
-                All products loaded
               </div>
-            </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                {products.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    accentColor={config.accentColor}
+                  />
+                ))}
+              </div>
+            )}
+
+            {products.length > 0 && (
+              <div className="flex justify-center py-12">
+                <div className="flex items-center gap-2 rounded-full bg-gray-50 px-5 py-3 text-[13px] font-semibold text-gray-400">
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-pink-500" />
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-pink-400 [animation-delay:120ms]" />
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-pink-300 [animation-delay:240ms]" />
+                  All products loaded
+                </div>
+              </div>
+            )}
           </main>
         </div>
 
+        {/* Mobile filter drawer */}
         {mobileFilterOpen && (
           <div className="fixed inset-0 z-[200] bg-black/40 lg:hidden">
             <div className="h-full w-[85%] max-w-[340px] overflow-y-auto bg-white p-5">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-lg font-bold">Filters</h2>
-
                 <button
                   type="button"
                   onClick={() => setMobileFilterOpen(false)}
-                  className="text-sm font-bold text-pink-600"
+                  className="text-sm font-bold"
+                  style={{ color: config.accentColor }}
                 >
                   Close
                 </button>
@@ -417,8 +479,24 @@ export default function ProductListingPage({ config }: ProductListingPageProps) 
                   key={filter.label}
                   section={filter}
                   accentColor={config.accentColor}
+                  selectedOptions={filterSelections[filter.label] || []}
+                  onToggle={(option) => toggleFilterOption(filter.label, option)}
                 />
               ))}
+
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearAllFilters();
+                    setMobileFilterOpen(false);
+                  }}
+                  className="mt-4 w-full rounded-full py-3 text-[13px] font-bold text-white"
+                  style={{ backgroundColor: config.accentColor }}
+                >
+                  Clear All Filters
+                </button>
+              )}
             </div>
           </div>
         )}
