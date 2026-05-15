@@ -183,7 +183,7 @@ export default function Footer() {
           {/* Top Categories */}
           <div className="footer-col">
             <h4>Top Categories</h4>
-            {['Men', 'Women', 'Kids', 'Beauty', 'Watches', 'Gift', 'Home', 'Luxe', 'Bargain'].map(item => (
+            {['Men', 'Women', 'Kids', 'Beauty', 'Watches', 'GenZ', 'Home',].map(item => (
               <a key={item} href="#">{item}</a>
             ))}
           </div>
@@ -191,7 +191,7 @@ export default function Footer() {
           {/* Useful Links */}
           <div className="footer-col">
             <h4>Useful Links</h4>
-            {['About Us', 'Contact Us', 'Track Orders', 'Corporate Site', 'Store Locator', 'Careers', 'Help/FAQS'].map(item => (
+            {['About Us', 'Contact Us',  'Careers', 'Help/FAQS'].map(item => (
               <a key={item} href="#">{item}</a>
             ))}
           </div>
@@ -199,7 +199,7 @@ export default function Footer() {
           {/* Our Policies */}
           <div className="footer-col">
             <h4>Our Policies</h4>
-            {['Terms Of Use', 'Privacy', 'Delivery Policy', 'Exchange & Return'].map(item => (
+            {['Terms Of Use', 'Privacy', 'Delivery Policy',].map(item => (
               <a key={item} href="#">{item}</a>
             ))}
           </div>

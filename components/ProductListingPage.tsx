@@ -16,11 +16,18 @@ import {
 export interface Product {
   id: number;
   brand: string;
+  name?: string;
   description: string;
   price: number;
   originalPrice?: number;
   discount?: number;
   offer?: string;
+  image?: string;
+  category?: string;
+  subCategory?: string;
+  size?: string;
+  color?: string;
+  fit?: string;
 }
 
 export interface FilterSection {
@@ -59,6 +66,7 @@ function FilterItem({
 
   const options = section.options || [];
   const visibleOptions = showAll ? options : options.slice(0, 6);
+  const isPriceFilter = section.label.toLowerCase() === 'price';
 
   return (
     <div className="border-b border-gray-100 py-4">
@@ -93,7 +101,15 @@ function FilterItem({
                     <span className="text-[10px] font-bold text-white">✓</span>
                   )}
                 </button>
-                <span className="truncate">{option}</span>
+                <span
+                  className={
+                    isPriceFilter
+                      ? 'rounded-full bg-gray-50 px-2.5 py-1 text-[12px] font-semibold text-gray-800'
+                      : 'truncate'
+                  }
+                >
+                  {option}
+                </span>
               </label>
             );
           })}
@@ -151,15 +167,39 @@ function ProductCard({
   accentColor: string;
 }) {
   const [liked, setLiked] = useState(false);
+  const productHref = {
+    pathname: `/products/${product.id}`,
+    query: {
+      brand: product.brand,
+      name: product.name || product.description,
+      description: product.description,
+      image: product.image || '',
+      price: String(product.price),
+      originalPrice: product.originalPrice ? String(product.originalPrice) : '',
+      category: product.category || '',
+      subCategory: product.subCategory || '',
+      size: product.size || '',
+      color: product.color || '',
+      fit: product.fit || '',
+    },
+  };
 
   return (
-    <Link href={`/product/${product.id}`} className="group block">
-      {/* Placeholder card instead of image */}
-      <div className="relative flex aspect-[3/4] w-full items-center justify-center overflow-hidden rounded-xl bg-gray-100">
-        <div className="flex flex-col items-center gap-2 text-center px-4">
-          <span className="text-[13px] font-bold text-gray-500">{product.brand}</span>
-          <span className="text-[11px] text-gray-400 leading-snug">{product.description}</span>
-        </div>
+    <Link href={productHref} className="group block">
+      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-gray-100">
+        {product.image ? (
+          <img
+            src={product.image}
+            alt={`${product.brand} ${product.name || product.description}`}
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+            loading="lazy"
+          />
+        ) : (
+          <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-4 text-center">
+            <span className="text-[13px] font-bold text-gray-500">{product.brand}</span>
+            <span className="text-[11px] leading-snug text-gray-400">{product.name || product.description}</span>
+          </div>
+        )}
 
         {product.discount && (
           <span
@@ -191,15 +231,15 @@ function ProductCard({
           {product.brand}
         </h3>
         <p className="mt-1 truncate text-[11px] text-gray-500 md:text-[12px]">
-          {product.description}
+          {product.name || product.description}
         </p>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <span className="text-[13px] font-bold text-gray-950 md:text-[14px]">
-            ₹{product.price}
+            ₹{product.price.toLocaleString('en-IN')}
           </span>
           {product.originalPrice && (
             <span className="text-[11px] text-gray-400 line-through md:text-[12px]">
-              ₹{product.originalPrice}
+              ₹{product.originalPrice.toLocaleString('en-IN')}
             </span>
           )}
           {product.discount && (
@@ -277,6 +317,56 @@ export default function ProductListingPage({ config }: ProductListingPageProps) 
       list = list.filter((p) => selectedBrands.includes(p.brand));
     }
 
+    const selectedSubCategories = filterSelections['Sub-Categories'] || [];
+    if (selectedSubCategories.length > 0) {
+      list = list.filter((p) =>
+        selectedSubCategories.includes(p.subCategory || p.description)
+      );
+    }
+
+    const selectedCategories = filterSelections['Categories'] || [];
+    if (selectedCategories.length > 0) {
+      list = list.filter((p) => p.category && selectedCategories.includes(p.category));
+    }
+
+    const selectedPrices = filterSelections['Price'] || [];
+    if (selectedPrices.length > 0) {
+      list = list.filter((p) =>
+        selectedPrices.some((option) => {
+          if (option.includes('500')) return p.price >= 500 && p.price <= 999;
+          if (option.includes('1,000')) return p.price >= 1000 && p.price <= 1999;
+          if (option.includes('2,000')) return p.price >= 2000 && p.price <= 2999;
+          if (option.includes('3,000')) return p.price >= 3000;
+          return true;
+        })
+      );
+    }
+
+    const selectedDiscounts = filterSelections['Discount'] || [];
+    if (selectedDiscounts.length > 0) {
+      const minDiscount = Math.min(
+        ...selectedDiscounts
+          .map((option) => Number(option.match(/\d+/)?.[0] || 0))
+          .filter(Boolean)
+      );
+      list = list.filter((p) => (p.discount || 0) >= minDiscount);
+    }
+
+    const selectedSizes = filterSelections['Size'] || [];
+    if (selectedSizes.length > 0) {
+      list = list.filter((p) => p.size && selectedSizes.includes(p.size));
+    }
+
+    const selectedColors = filterSelections['Color'] || [];
+    if (selectedColors.length > 0) {
+      list = list.filter((p) => p.color && selectedColors.includes(p.color));
+    }
+
+    const selectedFits = filterSelections['Fit'] || [];
+    if (selectedFits.length > 0) {
+      list = list.filter((p) => p.fit && selectedFits.includes(p.fit));
+    }
+
     // Sort
     if (sortBy === 'Price Low to High') list.sort((a, b) => a.price - b.price);
     if (sortBy === 'Price High to Low') list.sort((a, b) => b.price - a.price);
@@ -285,7 +375,7 @@ export default function ProductListingPage({ config }: ProductListingPageProps) 
     return list;
   }, [config.products, sortBy, activeBrands, filterSelections]);
 
-  const FilterPanel = () => (
+  const renderFilterPanel = () => (
     <>
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -330,7 +420,7 @@ export default function ProductListingPage({ config }: ProductListingPageProps) 
         <div className="mx-auto flex max-w-[1500px] gap-6 px-4 py-4 md:px-6">
           {/* Sidebar — sticky starts below navbar+breadcrumb = 92+37=129px */}
           <aside className="sticky top-[110px] hidden h-[calc(100vh-110px)] w-[260px] shrink-0 overflow-y-auto lg:block">
-            <FilterPanel />
+            {renderFilterPanel()}
           </aside>
 
           {/* ── Main Content ── */}
@@ -447,12 +537,6 @@ export default function ProductListingPage({ config }: ProductListingPageProps) 
 
             {products.length > 0 && (
               <div className="flex justify-center py-12">
-                <div className="flex items-center gap-2 rounded-full bg-gray-50 px-5 py-3 text-[13px] font-semibold text-gray-400">
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-pink-500" />
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-pink-400 [animation-delay:120ms]" />
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-pink-300 [animation-delay:240ms]" />
-                  All products loaded
-                </div>
               </div>
             )}
           </main>
@@ -474,15 +558,7 @@ export default function ProductListingPage({ config }: ProductListingPageProps) 
                 </button>
               </div>
 
-              {config.filters.map((filter) => (
-                <FilterItem
-                  key={filter.label}
-                  section={filter}
-                  accentColor={config.accentColor}
-                  selectedOptions={filterSelections[filter.label] || []}
-                  onToggle={(option) => toggleFilterOption(filter.label, option)}
-                />
-              ))}
+              {renderFilterPanel()}
 
               {hasActiveFilters && (
                 <button

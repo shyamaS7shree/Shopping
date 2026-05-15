@@ -10,6 +10,7 @@ export interface Product {
   reviews: number;
   inStock: boolean;
   images?: string[];
+  brand?: string;
 }
 
 export interface CartItem {

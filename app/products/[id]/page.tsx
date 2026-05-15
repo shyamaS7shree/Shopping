@@ -1,257 +1,511 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Star, ShoppingCart, Heart, Share2, ChevronLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import ProductCard from '@/components/ProductCard';
-import { getProductById, products } from '@/lib/products';
+import {
+  BadgeCheck,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  Heart,
+  Minus,
+  Package,
+  Plus,
+  RotateCcw,
+  Share2,
+  Undo2,
+} from 'lucide-react';
 import { toast } from 'sonner';
+import { getProductById } from '@/lib/products';
+import { addToCart, getCartItemKey, updateCartQuantity } from '@/lib/cart';
 
 interface ProductDetailPageProps {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export default function ProductDetailPage({ params }: ProductDetailPageProps) {
+function getParam(
+  params: Record<string, string | string[] | undefined>,
+  key: string
+) {
+  const value = params[key];
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function getProductType(product: DetailProduct) {
+  return product.subCategory || product.category || product.description || 'Product';
+}
+
+function slugify(value?: string) {
+  return (value || 'products')
+    .toLowerCase()
+    .replace(/\s+&\s+/g, '-')
+    .replace(/[\s,]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+function buildHighlights(product: DetailProduct) {
+  const productType = getProductType(product).replace(/^Men\s/, '');
+  const lowerType = productType.toLowerCase();
+  const lowerName = product.name.toLowerCase();
+  const color = product.color || 'As shown';
+  const fit = product.fit || 'Regular Fit';
+
+  if (/watch/.test(lowerType)) {
+    return [
+      ['Dial Shape', 'Round'],
+      ['Display', 'Analog'],
+      ['Gender', 'Men'],
+      ['Product Type', productType],
+      ['Strap Material', /leather/.test(lowerName) ? 'Leather' : 'Stainless Steel'],
+      ['Water Resistance', 'Splash Resistant'],
+      ['Movement', /chronograph/.test(lowerName) ? 'Chronograph' : 'Quartz'],
+      ['Care Instructions', 'Wipe with dry cloth'],
+    ];
+  }
+
+  if (/perfume|mist|body spray|grooming|personal care/.test(lowerType)) {
+    return [
+      ['Fragrance Type', /mist|spray/.test(lowerName) ? 'Body Spray' : 'Eau De Parfum'],
+      ['Pack Of', '1'],
+      ['Gender', 'Men'],
+      ['Product Type', productType],
+      ['Fragrance Family', /wild|code|bold|shot/i.test(product.name) ? 'Woody Spicy' : 'Fresh'],
+      ['Volume', /150/.test(product.name) ? '150 ml' : '50 ml'],
+      ['Usage', 'Daily Grooming'],
+      ['Care Instructions', 'Store in a cool dry place'],
+    ];
+  }
+
+  if (/wallet/.test(lowerType)) {
+    return [
+      ['Material', 'Leather'],
+      ['Pattern', 'Textured'],
+      ['Gender', 'Men'],
+      ['Product Type', productType],
+      ['Card Slots', 'Multiple'],
+      ['Closure Type', 'Fold'],
+      ['Color', color],
+      ['Care Instructions', 'Wipe with dry cloth'],
+    ];
+  }
+
+  if (/belt/.test(lowerType)) {
+    return [
+      ['Material', 'Leather'],
+      ['Pattern', 'Solid'],
+      ['Gender', 'Men'],
+      ['Product Type', productType],
+      ['Buckle Type', 'Pin Buckle'],
+      ['Occasion', /formal/i.test(product.name) ? 'Formal Wear' : 'Casual Wear'],
+      ['Color', color],
+      ['Care Instructions', 'Wipe with dry cloth'],
+    ];
+  }
+
+  if (/sunglasses|frames/.test(lowerType)) {
+    return [
+      ['Frame Shape', /aviator/i.test(product.name) ? 'Aviator' : 'Square'],
+      ['Lens Feature', 'UV Protected'],
+      ['Gender', 'Men'],
+      ['Product Type', productType],
+      ['Frame Material', 'Metal / Acetate'],
+      ['Occasion', 'Outdoor Wear'],
+      ['Color', color],
+      ['Care Instructions', 'Clean with lens cloth'],
+    ];
+  }
+
+  if (/shoe|sneaker/.test(lowerType)) {
+    return [
+      ['Sole Material', 'Rubber'],
+      ['Closure Type', /slip/i.test(product.name) ? 'Slip-On' : 'Lace-Up'],
+      ['Gender', 'Men'],
+      ['Product Type', productType],
+      ['Occasion', /formal/i.test(lowerType) ? 'Formal Wear' : 'Casual Wear'],
+      ['Upper Material', /formal|leather/i.test(product.name) ? 'Leather' : 'Synthetic'],
+      ['Color', color],
+      ['Care Instructions', 'Wipe with clean cloth'],
+    ];
+  }
+
+  if (/jacket|blazer|coat|sherwani|nehru/.test(lowerType)) {
+    return [
+      ['Pattern', /printed|embroidered/i.test(product.name) ? 'Printed' : 'Solid'],
+      ['Closure Type', /jacket|coat/i.test(lowerType) ? 'Zip / Button' : 'Button'],
+      ['Gender', 'Men'],
+      ['Product Type', productType],
+      ['Occasion', /sherwani|nehru|blazer|coat/i.test(lowerType) ? 'Festive / Formal Wear' : 'Casual Wear'],
+      ['Fabric', /sherwani|nehru/i.test(lowerType) ? 'Jacquard Blend' : 'Polyester Blend'],
+      ['Fit', fit],
+      ['Care Instructions', 'Dry Clean Preferred'],
+    ];
+  }
+
+  if (/brief|trunk|boxer|vest|thermal/.test(lowerType)) {
+    return [
+      ['Pattern', /printed/i.test(product.name) ? 'Printed' : 'Solid'],
+      ['Pack Of', /pack/i.test(lowerName) ? 'Pack' : '1'],
+      ['Gender', 'Men'],
+      ['Product Type', productType],
+      ['Fabric', 'Cotton Stretch'],
+      ['Waist Rise', 'Mid Rise'],
+      ['Fit', fit],
+      ['Care Instructions', 'Machine Wash'],
+    ];
+  }
+
+  return [
+    ['Pattern', /printed|typographic/i.test(product.name) ? 'Typographic' : 'Solid'],
+    ['Pack Of', '1'],
+    ['Gender', 'Men'],
+    ['Product Type', productType],
+    ['Occasion', /formal/i.test(lowerType) ? 'Formal Wear' : 'Casual Wear'],
+    ['Fabric', /jeans/i.test(lowerType) ? 'Denim' : 'Cotton Blend'],
+    ['Fit', fit],
+    ['Care Instructions', 'Machine Wash'],
+  ];
+}
+
+type DetailProduct = {
+  id: string;
+  brand: string;
+  name: string;
+  description: string;
+  price: number;
+  originalPrice?: number;
+  category?: string;
+  subCategory?: string;
+  image: string;
+  size?: string;
+  color?: string;
+  fit?: string;
+};
+
+export default function ProductDetailPage({
+  params,
+  searchParams,
+}: ProductDetailPageProps) {
   const { id } = React.use(params);
-  const product = getProductById(id);
-  const [quantity, setQuantity] = useState(1);
-  const [selectedImage, setSelectedImage] = useState(0);
+  const query = React.use(searchParams || Promise.resolve({}));
+  const fallbackProduct = getProductById(id);
+
+  const product = useMemo<DetailProduct | null>(() => {
+    const queryName = getParam(query, 'name');
+    const queryImage = getParam(query, 'image');
+
+    if (queryName && queryImage) {
+      return {
+        id,
+        brand: getParam(query, 'brand') || getParam(query, 'category') || 'Shopore',
+        name: queryName,
+        description: getParam(query, 'description') || queryName,
+        image: queryImage,
+        price: Number(getParam(query, 'price') || 0),
+        originalPrice: Number(getParam(query, 'originalPrice') || 0) || undefined,
+        category: getParam(query, 'category'),
+        subCategory: getParam(query, 'subCategory'),
+        size: getParam(query, 'size'),
+        color: getParam(query, 'color'),
+        fit: getParam(query, 'fit'),
+      };
+    }
+
+    if (!fallbackProduct) return null;
+
+    return {
+      id: fallbackProduct.id,
+      brand: fallbackProduct.brand || fallbackProduct.category,
+      name: fallbackProduct.name,
+      description: fallbackProduct.description,
+      price: fallbackProduct.price,
+      originalPrice: fallbackProduct.originalPrice,
+      category: fallbackProduct.category,
+      image: fallbackProduct.image,
+    };
+  }, [fallbackProduct, id, query]);
+
+  const [selectedSize, setSelectedSize] = useState('');
+  const [showMore, setShowMore] = useState(false);
+  const [addedToBag, setAddedToBag] = useState(false);
+  const [bagQuantity, setBagQuantity] = useState(1);
 
   if (!product) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-16 text-center">
-        <h1 className="text-2xl font-bold text-foreground mb-4">Product not found</h1>
-        <Link href="/products">
-          <Button>Back to Products</Button>
-        </Link>
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <div className="text-center">
+          <h1 className="mb-4 text-[26px] font-semibold text-[#071225]">
+            Product not found
+          </h1>
+          <Link href="/products" className="text-[14px] font-semibold text-blue-700">
+            Back to Products
+          </Link>
+        </div>
       </div>
     );
   }
 
-  const images = product.images || [product.image];
-  const relatedProducts = products
-    .filter(p => p.category === product.category && p.id !== product.id)
-    .slice(0, 4);
+  const productType = getProductType(product).replace(/^Men\s/, '');
+  const isWearable = !/wallet|belt|perfume|mist|grooming|watch|sunglasses|frames/i.test(
+    productType
+  );
+  const sizes = ['S', 'M', 'L', 'XL', '2XL'];
+  const highlights = buildHighlights(product);
 
-  const handleAddToCart = () => {
-    toast.success(`${quantity} x ${product.name} added to cart!`);
-    setQuantity(1);
+  const visibleHighlights = showMore ? highlights : highlights.slice(0, 4);
+  const exploreHref = `/men/${slugify(product.subCategory || product.category)}`;
+  const cartProduct = {
+    id: product.id,
+    brand: product.brand,
+    name: product.name,
+    image: product.image,
+    price: product.price,
+    originalPrice: product.originalPrice,
+    color: product.color,
+    size: isWearable ? selectedSize : undefined,
+    href: `/products/${product.id}`,
   };
 
-  const handleWishlist = () => {
-    toast.success('Added to wishlist!');
+  const handleAddToBag = () => {
+    if (isWearable && !selectedSize) {
+      toast.error('Please select size');
+      return;
+    }
+
+    addToCart(cartProduct, bagQuantity);
+    setAddedToBag(true);
+    toast.success(`${product.name} added to bag`);
   };
 
-  const handleShare = () => {
-    toast.success('Copied to clipboard!');
+  const updateBagQuantity = (quantity: number) => {
+    const nextQuantity = Math.max(1, quantity);
+    setBagQuantity(nextQuantity);
+
+    if (addedToBag) {
+      updateCartQuantity(getCartItemKey(cartProduct), nextQuantity);
+    }
   };
 
   return (
-    <>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumb */}
-        <Link href="/products" className="flex items-center text-primary hover:text-primary/80 mb-8 transition-colors fade-down">
-          <ChevronLeft className="w-4 h-4" />
-          Back to Products
-        </Link>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 mb-16">
-          {/* Images - HD Glassmorphism */}
-          <div className="fade-up">
-            <div className="glass-lg rounded-2xl overflow-hidden mb-6 aspect-square relative shadow-2xl">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-white/5 pointer-events-none"></div>
+    <main className="min-h-screen bg-white px-4 pb-10 pt-[96px] font-['DM_Sans',Inter,sans-serif] text-[#071225] md:px-10">
+      <div className="mx-auto grid max-w-[1180px] grid-cols-1 gap-10 lg:grid-cols-[360px_1fr]">
+        <section className="lg:self-stretch">
+          <div className="lg:sticky lg:top-[96px]">
+            <div className="relative aspect-[3/4] w-full max-w-[360px] overflow-hidden bg-[#f1f2f4]">
               <Image
-                src={images[selectedImage]}
-                alt={product.name}
+                src={product.image}
+                alt={`${product.brand} ${product.name}`}
                 fill
-                className="object-cover hover:scale-105 transition-transform duration-500"
                 priority
-                sizes="(max-width: 768px) 100vw, 50vw"
-                quality={95}
+                className="object-cover"
+                sizes="(max-width: 1024px) 100vw, 360px"
               />
             </div>
+          </div>
+        </section>
 
-            {images.length > 1 && (
-              <div className="grid grid-cols-4 gap-3">
-                {images.map((img, idx) => (
+        <section className="max-w-[760px] pt-1">
+          <div className="mb-4 flex items-start justify-between gap-6">
+            <div>
+              <h1 className="text-[25px] font-semibold uppercase leading-tight tracking-[0] text-[#071225]">
+                {product.brand}
+              </h1>
+              <p className="mt-2 text-[16px] font-normal text-slate-500">
+                {product.name}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-5 pt-1 text-[#071225]">
+              <button type="button" aria-label="Share product" className="transition hover:text-pink-500">
+                <Share2 size={19} strokeWidth={1.8} />
+              </button>
+              <button type="button" aria-label="Wishlist product" className="transition hover:text-pink-500">
+                <Heart size={20} strokeWidth={1.8} />
+              </button>
+            </div>
+          </div>
+
+          <div className="mb-5">
+            <div className="flex flex-wrap items-baseline gap-3">
+              <p className="text-[25px] font-bold leading-none text-black">
+                ₹{product.price.toLocaleString('en-IN')}
+              </p>
+              {product.originalPrice && (
+                <p className="text-[14px] text-slate-400 line-through">
+                  ₹{product.originalPrice.toLocaleString('en-IN')}
+                </p>
+              )}
+            </div>
+            <p className="mt-2 text-[12px] text-slate-500">Inclusive of all taxes</p>
+          </div>
+
+          {isWearable && (
+            <div className="mb-8">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-[18px] font-semibold uppercase tracking-[0] text-[#071225]">
+                  Size
+                </h2>
+                <button type="button" className="flex items-center gap-1 text-[14px] font-semibold text-black">
+                  Size Guide <ChevronRight size={16} />
+                </button>
+              </div>
+
+              <div className="flex flex-wrap items-start gap-2">
+                {sizes.map((size) => (
                   <button
-                    key={idx}
-                    onClick={() => setSelectedImage(idx)}
-                    className={`glass rounded-xl overflow-hidden aspect-square border-2 transition-all hover:scale-105 ${
-                      selectedImage === idx ? 'border-primary shadow-lg' : 'border-border/50 hover:border-border'
+                    key={size}
+                    type="button"
+                    onClick={() => setSelectedSize(size)}
+                    className={`h-9 w-11 border text-[13px] transition ${
+                      selectedSize === size
+                        ? 'border-[#071225] bg-[#071225] text-white'
+                        : 'border-slate-300 bg-white text-[#071225] hover:border-[#071225]'
                     }`}
                   >
-                    <Image
-                      src={img}
-                      alt={`${product.name} ${idx + 1}`}
-                      width={100}
-                      height={100}
-                      className="object-cover w-full h-full"
-                      quality={85}
-                    />
+                    {size}
                   </button>
                 ))}
+                <span className="self-end px-1 pb-0.5 text-[11px] font-semibold text-red-500">
+                  4 Left
+                </span>
               </div>
+            </div>
+          )}
+
+          <div className="mb-6 grid max-w-[770px] grid-cols-1 gap-5 sm:grid-cols-2">
+            {addedToBag && (
+              <div className="flex h-12 border border-[#071225]">
+                <button
+                  type="button"
+                  onClick={() => updateBagQuantity(bagQuantity - 1)}
+                  className="flex w-12 items-center justify-center bg-slate-50 text-[#071225]"
+                  aria-label="Decrease quantity"
+                >
+                  <Minus size={16} />
+                </button>
+                <span className="flex flex-1 items-center justify-center text-[15px] font-semibold">
+                  {bagQuantity}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => updateBagQuantity(bagQuantity + 1)}
+                  className="flex w-12 items-center justify-center bg-slate-50 text-[#071225]"
+                  aria-label="Increase quantity"
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
+            )}
+
+            {addedToBag ? (
+              <Link
+                href="/cart"
+                className="flex h-12 items-center justify-center bg-[#1f1b1f] text-[16px] font-semibold text-white shadow-sm transition hover:bg-[#111d31]"
+              >
+                Go To Bag
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={handleAddToBag}
+                className="h-12 bg-[#071225] text-[16px] font-semibold text-white shadow-sm transition hover:bg-[#111d31] sm:col-span-2"
+              >
+                Add To Bag
+              </button>
             )}
           </div>
 
-          {/* Product Info - Glassmorphism */}
-          <div className="fade-up" style={{ animationDelay: '0.1s' }}>
-            <div className="glass rounded-2xl p-8 mb-6">
-              <div className="text-sm text-primary/70 font-medium mb-3 uppercase tracking-wide">{product.category}</div>
-              <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6 leading-tight">
-                {product.name}
-              </h1>
-
-              {/* Rating */}
-              <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border/30">
-                <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`w-5 h-5 ${
-                        i < Math.floor(product.rating)
-                          ? 'fill-primary text-primary'
-                          : 'text-muted-foreground/30'
-                      }`}
-                    />
-                  ))}
-                </div>
-                <span className="text-foreground/70">
-                  {product.rating} ({product.reviews} reviews)
-                </span>
-              </div>
+          <section className="mb-7">
+            <h2 className="mb-4 text-[20px] font-semibold uppercase tracking-[0]">
+              Delivery Details
+            </h2>
+            <div className="flex h-[46px] max-w-[770px] border border-slate-400">
+              <input
+                type="text"
+                placeholder="Enter your PIN code"
+                className="min-w-0 flex-1 px-4 text-[14px] text-[#071225] outline-none placeholder:text-slate-500"
+              />
+              <button type="button" className="px-5 text-[14px] font-semibold text-[#071225]">
+                CHECK
+              </button>
             </div>
 
-            {/* Price - Glassmorphism */}
-            <div className="glass rounded-2xl p-8 mb-6">
-              <div className="flex items-baseline gap-4 mb-3">
-                <span className="text-4xl font-bold text-primary">
-                  ${product.price.toFixed(2)}
-                </span>
-                {product.originalPrice && (
-                  <span className="text-xl text-foreground/50 line-through">
-                    ${product.originalPrice.toFixed(2)}
-                  </span>
-                )}
-              </div>
-              {product.originalPrice && (
-                <div className="text-sm text-destructive font-semibold bg-destructive/10 px-3 py-1 rounded-lg w-fit">
-                  Save ${(product.originalPrice - product.price).toFixed(2)}
-                </div>
-              )}
+            <div className="mt-3 flex items-center gap-3 text-[15px] text-[#071225]">
+              <RotateCcw size={18} className="text-slate-500" />
+              <span>14 Days Easy Returns And Exchange</span>
             </div>
+          </section>
 
-            {/* Description */}
-            <div className="glass rounded-2xl p-8 mb-6">
-              <p className="text-foreground/70 mb-4 text-lg leading-relaxed font-medium">
-                {product.description}
-              </p>
-
-              {/* Stock Status */}
-              <div className="mt-4 pt-4 border-t border-border/30">
-                {product.inStock ? (
-                  <div className="text-green-600 font-semibold flex items-center gap-2">
-                    <div className="w-2 h-2 bg-green-600 rounded-full animate-pulse"></div>
-                    In Stock
-                  </div>
-                ) : (
-                  <div className="text-destructive font-semibold">Out of Stock</div>
-                )}
-              </div>
-            </div>
-
-            {/* Quantity & Actions */}
-            <div className="space-y-4">
-              <div className="glass rounded-2xl p-6">
-                <label className="text-foreground font-semibold block mb-4">Select Quantity:</label>
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-12 h-12 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors font-bold text-lg flex items-center justify-center"
-                  >
-                    −
-                  </button>
-                  <span className="text-2xl font-bold text-foreground min-w-12 text-center">{quantity}</span>
-                  <button
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="w-12 h-12 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors font-bold text-lg flex items-center justify-center"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <Button
-                  onClick={handleAddToCart}
-                  disabled={!product.inStock}
-                  className="flex-1 py-6 text-lg font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all"
-                  size="lg"
+          <section className="mb-8 grid grid-cols-3 border-y border-slate-200 py-5">
+            {[
+              [BadgeCheck, '100% Authentic'],
+              [Package, 'Fast Delivery'],
+              [Undo2, 'Easy Return'],
+            ].map(([Icon, label], index) => {
+              const ServiceIcon = Icon as typeof BadgeCheck;
+              return (
+                <div
+                  key={label as string}
+                  className={`text-center ${index !== 2 ? 'border-r border-slate-200' : ''}`}
                 >
-                  <ShoppingCart className="w-5 h-5 mr-2" />
-                  Add to Cart
-                </Button>
-                <Button
-                  onClick={handleWishlist}
-                  variant="outline"
-                  size="lg"
-                  className="py-6 px-6 hover:scale-105 transition-transform"
-                >
-                  <Heart className="w-5 h-5" />
-                </Button>
-                <Button
-                  onClick={handleShare}
-                  variant="outline"
-                  size="lg"
-                  className="py-6 px-6 hover:scale-105 transition-transform"
-                >
-                  <Share2 className="w-5 h-5" />
-                </Button>
-              </div>
-            </div>
+                  <ServiceIcon className="mx-auto mb-2 text-black" size={27} />
+                  <p className="text-[13px] text-[#071225]">{label as string}</p>
+                </div>
+              );
+            })}
+          </section>
 
-            {/* Additional Info */}
-            <div className="glass rounded-2xl p-8 mt-6">
-              <h3 className="text-lg font-semibold text-foreground mb-6">Product Details</h3>
-              <div className="space-y-4">
-                <div className="flex justify-between pb-4 border-b border-border/30">
-                  <span className="text-foreground/70">SKU:</span>
-                  <span className="font-semibold text-foreground">{product.id}</span>
-                </div>
-                <div className="flex justify-between pb-4 border-b border-border/30">
-                  <span className="text-foreground/70">Category:</span>
-                  <span className="font-semibold text-foreground">{product.category}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-foreground/70">Availability:</span>
-                  <span className="font-semibold text-foreground">
-                    {product.inStock ? 'In Stock' : 'Out of Stock'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+          <section className="border-t border-slate-200 pt-7">
+            <button
+              type="button"
+              onClick={() => setShowMore((value) => !value)}
+              className="mb-6 flex w-full items-center justify-between text-left"
+            >
+              <h2 className="text-[23px] font-semibold uppercase tracking-[0] text-black">
+                Product Highlights
+              </h2>
+              {showMore ? <ChevronUp size={17} /> : <ChevronDown size={17} />}
+            </button>
 
-        {/* Related Products */}
-        {relatedProducts.length > 0 && (
-          <section className="pt-8 border-t border-border/30">
-            <h2 className="text-3xl font-bold text-foreground mb-12 fade-down">You Might Also Like</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-              {relatedProducts.map((p, idx) => (
-                <div key={p.id} style={{ animationDelay: `${idx * 0.1}s` }} className="fade-up">
-                  <ProductCard product={p} />
+            <div className="grid grid-cols-1 gap-x-24 gap-y-5 text-[14px] sm:grid-cols-2">
+              {visibleHighlights.map(([label, value]) => (
+                <div key={label}>
+                  <p className="text-slate-500">{label}:</p>
+                  <p className="mt-1 font-semibold text-black">{value}</p>
                 </div>
               ))}
             </div>
+
+            {!showMore && (
+              <button
+                type="button"
+                onClick={() => setShowMore(true)}
+                className="mt-7 flex items-center gap-1 text-[14px] font-semibold text-blue-700"
+              >
+                View More <ChevronDown size={15} />
+              </button>
+            )}
+
+            <Link
+              href={exploreHref}
+              className="mt-8 flex items-center justify-between border border-slate-200 px-4 py-3 transition hover:border-slate-300"
+            >
+              <div className="flex items-center gap-3">
+                <div className="relative h-14 w-11 overflow-hidden bg-slate-100">
+                  <Image src={product.image} alt={product.name} fill className="object-cover" sizes="44px" />
+                </div>
+                <div>
+                  <p className="text-[15px] font-semibold text-[#071225]">{product.brand}</p>
+                  <p className="mt-1 text-[13px] text-slate-500">Explore All Products</p>
+                </div>
+              </div>
+              <ChevronRight size={18} />
+            </Link>
           </section>
-        )}
+        </section>
       </div>
-    </>
+    </main>
   );
 }
-
-import React from 'react';

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import { ShoppingCart, Menu, X, Search, User } from 'lucide-react';
 import { getUser, logout } from '@/lib/api';
+import { CartItem, getCartCount, getCartEventName, readCart } from '@/lib/cart';
 import AuthModal from '@/components/AuthModal';
 
 const dropdownLinkStyle: React.CSSProperties = {
@@ -16,10 +17,10 @@ const dropdownLinkStyle: React.CSSProperties = {
 };
 
 const MEN_MENU = [
-  { category: 'Topwear', items: ['T-Shirts', 'Casual Shirts', 'Formal Shirts', 'Sweatshirts', 'Jackets', 'Blazers & Coats', 'Suits'] },
+  { category: 'Topwear', items: ['T-Shirts', 'Casual Shirts', 'Formal Shirts', 'Jackets', 'Blazers & Coats',] },
   { category: 'Indian & Festive Wear', items: ['Kurtas & Kurta Sets', 'Sherwanis', 'Nehru Jackets',] },
   { category: 'Bottomwear', items: ['Jeans', 'Formal Trousers', 'Shorts', 'Track Pants & Joggers'] },
-  { category: 'Innerwear & Sleepwear', items: ['Briefs & Trunks', 'Boxers', 'Vests', 'Sleepwear & Loungewear', 'Thermals'] },
+  { category: 'Innerwear & Sleepwear', items: ['Briefs & Trunks', 'Boxers', 'Vests','Thermals'] },
   { category: 'Plus Size', items: [], isLink: true },
   { category: 'Footwear', items: ['Casual Shoes','Formal Shoes', 'Sneakers','Socks'] },
   { category: 'Personal Care & Grooming', items: [], isLink: true },
@@ -109,21 +110,48 @@ const MENU_COLORS: Record<MenuName, string> = {
   genz: '#14b8a6',
 };
 
+const slugifyMenuLabel = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/\s+&\s+/g, '-')
+    .replace(/[\s,]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  const [cartCount] = useState(0);
+  const [cartCount, setCartCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [scrolled, setScrolled] = useState(false);
   const [activeMenu, setActiveMenu] = useState<MenuName | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [bagOpen, setBagOpen] = useState(false);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const closeTimer = useRef<number | null>(null);
   const [currentUser, setCurrentUser] = useState<{ fullName?: string; email?: string } | null>(null);
   useEffect(() => {
     setCurrentUser(getUser());
   }, []);
 
+  useEffect(() => {
+    const updateCartCount = () => {
+      setCartCount(getCartCount());
+      setCartItems(readCart());
+    };
+
+    updateCartCount();
+    window.addEventListener(getCartEventName(), updateCartCount);
+    window.addEventListener('storage', updateCartCount);
+
+    return () => {
+      window.removeEventListener(getCartEventName(), updateCartCount);
+      window.removeEventListener('storage', updateCartCount);
+    };
+  }, []);
+
   const userFirstName = currentUser?.fullName?.split(' ')[0] || currentUser?.email?.split('@')[0] || 'there';
+  const bagSubtotal = cartItems.reduce((total, item) => total + item.product.price * item.quantity, 0);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -412,8 +440,9 @@ export default function Navbar() {
           </div>
 
           {/* Cart / Bag */}
-          <Link
-            href="/cart"
+          <button
+            type="button"
+            onClick={() => setBagOpen((open) => !open)}
             className="nav-icon-btn cart-wrapper"
             title="Cart"
             style={{ flexDirection: 'column', gap: '2px', padding: '6px 10px' }}
@@ -421,7 +450,7 @@ export default function Navbar() {
             <ShoppingCart size={18} />
             <span style={{ fontSize: '11px', fontWeight: 600, color: '#374151' }}>Bag</span>
             {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
-          </Link>
+          </button>
 
           {/* Mobile toggle */}
           <button className="mobile-toggle" onClick={() => setIsOpen(!isOpen)} aria-label="Toggle menu">
@@ -429,6 +458,148 @@ export default function Navbar() {
           </button>
         </div>
       </nav>
+
+      {bagOpen && (
+        <>
+          <button
+            type="button"
+            aria-label="Close bag preview"
+            onClick={() => setBagOpen(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 180,
+              background: 'transparent',
+              border: 'none',
+              cursor: 'default',
+            }}
+          />
+          <aside
+            style={{
+              position: 'fixed',
+              top: scrolled ? '58px' : '78px',
+              right: '28px',
+              width: 'min(380px, calc(100vw - 32px))',
+              maxHeight: 'calc(100vh - 96px)',
+              overflowY: 'auto',
+              background: '#fff',
+              zIndex: 220,
+              boxShadow: '0 22px 70px rgba(15, 23, 42, 0.18)',
+              borderTop: '3px solid #ec4899',
+              fontFamily: 'DM Sans, Inter, sans-serif',
+            }}
+          >
+            <div style={{ padding: '18px 18px 14px', borderBottom: '1px solid #eef2f7' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <h2 style={{ margin: 0, color: '#071225', fontSize: '18px', fontWeight: 800 }}>My Bag</h2>
+                  <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '13px' }}>
+                    {cartCount} {cartCount === 1 ? 'item' : 'items'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setBagOpen(false)}
+                  style={{
+                    border: 'none',
+                    background: '#f8fafc',
+                    color: '#071225',
+                    width: '32px',
+                    height: '32px',
+                    cursor: 'pointer',
+                    fontSize: '20px',
+                    lineHeight: 1,
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            {cartItems.length === 0 ? (
+              <div style={{ padding: '30px 18px', textAlign: 'center' }}>
+                <p style={{ margin: 0, color: '#071225', fontSize: '15px', fontWeight: 700 }}>Your bag is empty</p>
+                <p style={{ margin: '8px 0 18px', color: '#64748b', fontSize: '13px' }}>Add something you love.</p>
+                <Link
+                  href="/men/topwear"
+                  onClick={() => setBagOpen(false)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '42px',
+                    padding: '0 22px',
+                    background: '#071225',
+                    color: '#fff',
+                    textDecoration: 'none',
+                    fontSize: '13px',
+                    fontWeight: 800,
+                  }}
+                >
+                  Continue Shopping
+                </Link>
+              </div>
+            ) : (
+              <>
+                <div style={{ padding: '12px 18px', display: 'grid', gap: '12px' }}>
+                  {cartItems.slice(0, 3).map((item) => (
+                    <div key={item.key} style={{ display: 'flex', gap: '12px' }}>
+                      <div style={{ position: 'relative', width: '64px', height: '84px', background: '#f1f5f9', overflow: 'hidden', flexShrink: 0 }}>
+                        <img
+                          src={item.product.image}
+                          alt={item.product.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                        />
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <p style={{ margin: 0, color: '#071225', fontSize: '13px', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {item.product.brand}
+                        </p>
+                        <p style={{ margin: '3px 0 0', color: '#64748b', fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {item.product.name}
+                        </p>
+                        <p style={{ margin: '8px 0 0', color: '#071225', fontSize: '13px', fontWeight: 800 }}>
+                          ₹{(item.product.price * item.quantity).toLocaleString('en-IN')} · Qty {item.quantity}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  {cartItems.length > 3 && (
+                    <p style={{ margin: 0, color: '#64748b', fontSize: '12px' }}>
+                      +{cartItems.length - 3} more in your bag
+                    </p>
+                  )}
+                </div>
+
+                <div style={{ padding: '16px 18px 18px', borderTop: '1px solid #eef2f7' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '14px', color: '#071225', fontSize: '15px', fontWeight: 800 }}>
+                    <span>Subtotal</span>
+                    <span>₹{bagSubtotal.toLocaleString('en-IN')}.00</span>
+                  </div>
+                  <Link
+                    href="/cart"
+                    onClick={() => setBagOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      height: '44px',
+                      width: '100%',
+                      background: '#071225',
+                      color: '#fff',
+                      textDecoration: 'none',
+                      fontSize: '15px',
+                      fontWeight: 800,
+                    }}
+                  >
+                    Go To Bag
+                  </Link>
+                </div>
+              </>
+            )}
+          </aside>
+        </>
+      )}
 
       {/* Mega Menu */}
       {activeMenu && (() => {
@@ -449,10 +620,10 @@ export default function Navbar() {
               <div className="mega-col" key={ci}>
                 {colSections.map(sec => (
                   <div className="mega-section" key={sec.category}>
-                    <a className="mega-category" href={`/${activeMenu}/${sec.category.toLowerCase().replace(/\s+&\s+/g, '-').replace(/[\s,]+/g, '-')}`}>{sec.category}</a>
+                    <a className="mega-category" href={`/${activeMenu}/${slugifyMenuLabel(sec.category)}`}>{sec.category}</a>
                     {sec.items.length > 0 && <div className="mega-divider" />}
                     {sec.items.map(item => (
-                      <a className="mega-item" key={item} href={`/${activeMenu}/${sec.category.toLowerCase().replace(/\s+&\s+/g, '-').replace(/[\s,]+/g, '-')}`}>
+                      <a className="mega-item" key={item} href={`/${activeMenu}/${slugifyMenuLabel(item)}`}>
                         {item}
                       </a>
                     ))}
