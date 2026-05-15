@@ -1,196 +1,229 @@
 'use client';
 
 import { useState } from 'react';
-import { Mail, Phone, MapPin, Clock } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import {
+  ArrowLeft,
+  Briefcase,
+  Building2,
+  Gift,
+  HelpCircle,
+  Home,
+  Mail,
+  MapPin,
+  MessageCircle,
+  Package,
+  Phone,
+  RefreshCcw,
+  ShieldAlert,
+  Store,
+  User,
+  Wallet,
+  Volume2,
+} from 'lucide-react';
+
+const navItems = [
+  { icon: User, label: 'My Profile', sub: 'Manage your profile details' },
+  { icon: Package, label: 'My Orders', sub: 'Your most loved salons & Products from Shop' },
+  { icon: Home, label: 'Manage Addresses', sub: 'Manage your saved addresses' },
+  { icon: Briefcase, label: 'First Citizen Club', sub: 'Manage Notification & Reminders' },
+  { icon: Wallet, label: 'My Wallet', sub: 'Check balance or add from gift card.' },
+  { icon: Gift, label: 'Gift Card/EGV', sub: 'Buy Gift Cards for every occasion' },
+  { icon: Store, label: 'Stores Locator', sub: 'Find stores and experiences near you' },
+  { icon: User, label: 'Personal Shopper', sub: 'Our style help and curated looks just for you' },
+  { icon: HelpCircle, label: 'Help & Support', sub: 'Need assistance? We are happy to help' },
+];
+
+const categories = ['Order Related', 'Payment Issue', 'Return / Refund', 'Product Query', 'Delivery Issue', 'Other'];
+const subCategories = ['Delayed Delivery', 'Wrong Item', 'Damaged Product', 'Missing Item', 'Cancel Order'];
 
 export default function ContactPage() {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: '',
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.name || !formData.email || !formData.subject || !formData.message) {
-      toast.error('Please fill in all fields');
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    // Simulate form submission
-    setTimeout(() => {
-      toast.success('Message sent successfully! We&apos;ll get back to you soon.');
-      setFormData({ name: '', email: '', subject: '', message: '' });
-      setIsSubmitting(false);
-    }, 1500);
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmitted(true);
+    setTimeout(() => setSubmitted(false), 2500);
   };
 
   return (
-    <>
-      <section className="bg-primary text-primary-foreground py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl font-bold mb-4">Get in Touch</h1>
-          <p className="text-lg text-primary-foreground/80">
-            We&apos;d love to hear from you. Let us know how we can help.
-          </p>
-        </div>
-      </section>
+    <main className="min-h-screen bg-white px-5 pb-16 pt-[106px] font-['DM_Sans',Inter,sans-serif] text-[#071225]">
+      <div className="mx-auto max-w-[1480px]">
+        <h1 className="mb-10 text-[24px] font-bold lowercase tracking-[0]">contactus</h1>
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
-          {/* Contact Info */}
-          {[
-            {
-              icon: Mail,
-              title: 'Email',
-              content: 'hello@elegance.com',
-              subtext: 'We reply within 24 hours',
-            },
-            {
-              icon: Phone,
-              title: 'Phone',
-              content: '+1 (234) 567-890',
-              subtext: 'Monday to Friday, 9am-6pm EST',
-            },
-            {
-              icon: MapPin,
-              title: 'Address',
-              content: '123 Luxury Lane',
-              subtext: 'Fashion City, FC 10001',
-            },
-          ].map((item, index) => {
-            const Icon = item.icon;
-            return (
-              <div key={index} className="text-center">
-                <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center mx-auto mb-4">
-                  <Icon className="w-8 h-8 text-primary" />
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[330px_1fr]">
+          <aside className="border-r border-slate-200 pr-8">
+            <div className="space-y-8">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <div key={item.label} className="flex items-start gap-3">
+                    <Icon size={19} strokeWidth={1.6} className="mt-0.5 text-slate-700" />
+                    <div>
+                      <p className="text-[15px] font-medium text-slate-800">{item.label}</p>
+                      <p className="mt-1 text-[12px] leading-4 text-slate-500">{item.sub}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </aside>
+
+          <section className="min-w-0">
+            <div className="mb-7 flex items-center gap-3">
+              <ArrowLeft size={18} />
+              <h2 className="text-[18px] font-semibold">Contact Us</h2>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="First Name*" placeholder="First Name" required />
+                <Field label="Last Name*" placeholder="Last Name" required />
+              </div>
+
+              <Field label="Email ID*" placeholder="Email ID" type="email" required />
+              <Field label="Mobile Number*" placeholder="Mobile Number" required />
+              <Field label="Order No" placeholder="Order No" />
+
+              <label className="block">
+                <span className="mb-2 block text-[13px] font-medium">Title<span className="text-red-500">*</span></span>
+                <textarea required className="h-[78px] w-full resize-y border border-slate-300 px-4 py-3 text-[13px] outline-none transition focus:border-pink-500" />
+              </label>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <SelectField label="Category*" options={categories} />
+                <SelectField label="Sub Category*" options={subCategories} />
+              </div>
+
+              <label className="block">
+                <span className="mb-2 block text-[13px] font-medium">Write comments here<span className="text-red-500">*</span></span>
+                <textarea required placeholder="Write comments here" className="h-[72px] w-full resize-y border border-slate-300 px-4 py-3 text-[13px] outline-none transition placeholder:text-slate-400 focus:border-pink-500" />
+              </label>
+
+              <div className="max-w-[650px]">
+                <div className="mb-3 grid grid-cols-[1fr_38px_38px] items-center">
+                  <div className="bg-slate-300 py-2 text-center font-mono text-[15px] font-bold tracking-[0.28em]">
+                    dCB9C9
+                  </div>
+                  <button type="button" className="flex h-full items-center justify-center border-y border-slate-300">
+                    <RefreshCcw size={15} />
+                  </button>
+                  <button type="button" className="flex h-full items-center justify-center border border-slate-300">
+                    <Volume2 size={15} />
+                  </button>
                 </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">{item.title}</h3>
-                <p className="font-semibold text-foreground mb-1">{item.content}</p>
-                <p className="text-muted-foreground text-sm">{item.subtext}</p>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Contact Form */}
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-muted rounded-lg p-8 md:p-12">
-            <h2 className="text-2xl font-bold text-foreground mb-8">Send us a Message</h2>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-foreground font-semibold mb-2">Name *</label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    placeholder="Your name"
-                    className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-foreground font-semibold mb-2">Email *</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="your.email@example.com"
-                    className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground"
-                    required
-                  />
-                </div>
+                <Field label="Type the word above" placeholder="Type the word above" required />
               </div>
 
-              <div>
-                <label className="block text-foreground font-semibold mb-2">Subject *</label>
-                <input
-                  type="text"
-                  name="subject"
-                  value={formData.subject}
-                  onChange={handleChange}
-                  placeholder="How can we help?"
-                  className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-foreground font-semibold mb-2">Message *</label>
-                <textarea
-                  name="message"
-                  value={formData.message}
-                  onChange={handleChange}
-                  placeholder="Tell us more about your inquiry..."
-                  rows={6}
-                  className="w-full px-4 py-3 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground resize-none"
-                  required
-                />
-              </div>
-
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full"
-                size="lg"
-              >
-                {isSubmitting ? 'Sending...' : 'Send Message'}
-              </Button>
+              <button type="submit" className="h-10 w-[140px] bg-slate-300 text-[12px] font-bold uppercase text-white transition hover:bg-[#071225]">
+                {submitted ? 'Submitted' : 'Submit'}
+              </button>
             </form>
-          </div>
-        </div>
-      </section>
 
-      {/* FAQ Section */}
-      <section className="bg-muted py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-foreground text-center mb-12">
-            Frequently Asked Questions
-          </h2>
+            <section className="mt-8 border border-slate-200 p-5">
+              <h3 className="mb-5 text-center text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                Support Information
+              </h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {[
-              {
-                q: 'What is your return policy?',
-                a: 'We offer a 30-day return policy on all items. Simply contact us for a return authorization and ship the item back in its original condition.',
-              },
-              {
-                q: 'How long does shipping take?',
-                a: 'Standard shipping typically takes 5-7 business days. Express shipping options are available at checkout.',
-              },
-              {
-                q: 'Do you offer international shipping?',
-                a: 'Yes! We ship to most countries worldwide. International shipping costs and times are calculated at checkout.',
-              },
-              {
-                q: 'How can I track my order?',
-                a: 'You&apos;ll receive a tracking number via email once your order ships. You can use it to track your package in real-time.',
-              },
-            ].map((item, index) => (
-              <div key={index} className="bg-background rounded-lg p-6">
-                <h3 className="font-semibold text-foreground mb-3">{item.q}</h3>
-                <p className="text-muted-foreground">{item.a}</p>
+              <div className="space-y-4">
+                {/* <SupportRow icon={Building2} title="Our Office">
+                  Dhirubhai Tower, 5th Floor, Maker Chambers, Mumbai, Maharashtra - 400 004
+                </SupportRow> */}
+
+                <div className="grid gap-4 border-y border-slate-100 py-4 md:grid-cols-[1fr_auto]">
+                  <div className="space-y-4">
+                    <SupportRow icon={Phone} title="Phone">+91 796-972-7777</SupportRow>
+                    <SupportRow icon={Mail} title="Email ID">shyamashree24das@gmail.com</SupportRow>
+                    <p className="text-[12px] text-slate-600">
+                      <span className="font-semibold text-[#071225]">Operational Timings:</span> 09:00 AM to 10:00 PM
+                    </p>
+                  </div>
+                  <button className="h-9 self-start bg-emerald-50 px-4 text-[12px] font-semibold text-emerald-700">
+                    WhatsApp Us
+                  </button>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-[1fr_300px]">
+                  <SupportRow icon={ShieldAlert} title="For Grievance Related Queries">
+                    In case you are not satisfied with the response / resolution to your complaint or request, you may contact our Grievance Officer.
+                  </SupportRow>
+                  <div className="border border-slate-200 p-4 text-[12px] leading-6 text-slate-600">
+                    <p className="mb-2 font-semibold text-[#071225]">Shyamashree Das</p>
+                    <p>+91 9876543210</p>
+                    <p>shyamashree24das@gmail.com</p>
+                    <p>Monday to Friday, 10:00 am to 6:00 pm</p>
+                  </div>
+                </div>
               </div>
-            ))}
-          </div>
+            </section>
+          </section>
         </div>
-      </section>
-    </>
+      </div>
+
+      <button className="fixed bottom-6 right-6 flex h-14 w-14 items-center justify-center rounded-full bg-black text-white shadow-xl">
+        <MessageCircle size={24} />
+      </button>
+    </main>
+  );
+}
+
+function Field({
+  label,
+  placeholder,
+  type = 'text',
+  required = false,
+}: {
+  label: string;
+  placeholder: string;
+  type?: string;
+  required?: boolean;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-[13px] font-medium">{label}</span>
+      <input
+        type={type}
+        required={required}
+        placeholder={placeholder}
+        className="h-12 w-full border border-slate-300 px-4 text-[13px] outline-none transition placeholder:text-slate-400 focus:border-pink-500"
+      />
+    </label>
+  );
+}
+
+function SelectField({ label, options }: { label: string; options: string[] }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-[13px] font-medium">{label}</span>
+      <select required className="h-12 w-full border border-slate-300 bg-white px-4 text-[13px] outline-none transition focus:border-pink-500">
+        <option value="">Select {label.replace('*', '')}</option>
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function SupportRow({
+  icon: Icon,
+  title,
+  children,
+}: {
+  icon: typeof User;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex gap-3">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center bg-orange-50 text-orange-500">
+        <Icon size={17} />
+      </div>
+      <div>
+        <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#071225]">{title}</p>
+        <p className="mt-1 text-[12px] leading-5 text-slate-600">{children}</p>
+      </div>
+    </div>
   );
 }

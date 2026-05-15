@@ -38,7 +38,7 @@ function getProductType(product: DetailProduct) {
 }
 
 function slugify(value?: string) {
-  return (value || 'products')
+  return (value || 'topwear')
     .toLowerCase()
     .replace(/\s+&\s+/g, '-')
     .replace(/[\s,]+/g, '-')
@@ -239,8 +239,8 @@ export default function ProductDetailPage({
           <h1 className="mb-4 text-[26px] font-semibold text-[#071225]">
             Product not found
           </h1>
-          <Link href="/products" className="text-[14px] font-semibold text-blue-700">
-            Back to Products
+          <Link href="/men/topwear" className="text-[14px] font-semibold text-blue-700">
+            Back to Shopping
           </Link>
         </div>
       </div>

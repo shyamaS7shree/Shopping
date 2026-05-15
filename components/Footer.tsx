@@ -2,6 +2,26 @@
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const topCategoryLinks = [
+    ['Men', '/men/topwear'],
+    ['Women', '/women'],
+    ['Kids', '/kids/boys-clothing'],
+    ['Beauty', '/beauty/makeup'],
+    ['Watches', '/men/watches'],
+    ['GenZ', '/genz/womens-western-wear'],
+    ['Home', '/home/bed-linen-furnishing'],
+  ];
+  const usefulLinks = [
+    ['About Us', '/about'],
+    ['Contact Us', '/contact'],
+    ['Careers', '/careers'],
+    ['Help/FAQS', '/help-faqs'],
+  ];
+  const policyLinks = [
+    ['Terms Of Use', '/terms-of-use'],
+    ['Privacy', '/privacy'],
+    ['Delivery Policy', '/delivery-policy'],
+  ];
 
   return (
     <>
@@ -183,24 +203,24 @@ export default function Footer() {
           {/* Top Categories */}
           <div className="footer-col">
             <h4>Top Categories</h4>
-            {['Men', 'Women', 'Kids', 'Beauty', 'Watches', 'GenZ', 'Home',].map(item => (
-              <a key={item} href="#">{item}</a>
+            {topCategoryLinks.map(([item, href]) => (
+              <a key={item} href={href}>{item}</a>
             ))}
           </div>
 
           {/* Useful Links */}
           <div className="footer-col">
             <h4>Useful Links</h4>
-            {['About Us', 'Contact Us',  'Careers', 'Help/FAQS'].map(item => (
-              <a key={item} href="#">{item}</a>
+            {usefulLinks.map(([item, href]) => (
+              <a key={item} href={href}>{item}</a>
             ))}
           </div>
 
           {/* Our Policies */}
           <div className="footer-col">
             <h4>Our Policies</h4>
-            {['Terms Of Use', 'Privacy', 'Delivery Policy',].map(item => (
-              <a key={item} href="#">{item}</a>
+            {policyLinks.map(([item, href]) => (
+              <a key={item} href={href}>{item}</a>
             ))}
           </div>
 

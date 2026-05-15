@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { ShoppingCart, Menu, X, Search, User } from 'lucide-react';
 import { getUser, logout } from '@/lib/api';
 import { CartItem, getCartCount, getCartEventName, readCart } from '@/lib/cart';
@@ -119,6 +120,7 @@ const slugifyMenuLabel = (value: string) =>
     .replace(/^-|-$/g, '');
 
 export default function Navbar() {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
@@ -197,6 +199,42 @@ export default function Navbar() {
     }
   };
 
+  const handleSearchSubmit = (event?: React.FormEvent) => {
+    event?.preventDefault();
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return;
+
+    const sectionMatches: Array<[string, string[]]> = [
+      ['t-shirts', ['tshirt', 't-shirt', 'tee', 'polo']],
+      ['casual-shirts', ['casual shirt', 'shirt casual']],
+      ['formal-shirts', ['formal shirt', 'office shirt']],
+      ['jackets', ['jacket']],
+      ['blazers-coats', ['blazer', 'coat', 'suit']],
+      ['jeans', ['jeans', 'denim']],
+      ['formal-trousers', ['trouser', 'formal pant']],
+      ['shorts', ['shorts']],
+      ['track-pants-joggers', ['track', 'jogger']],
+      ['kurtas-kurta-sets', ['kurta']],
+      ['sherwanis', ['sherwani']],
+      ['casual-shoes', ['casual shoe']],
+      ['formal-shoes', ['formal shoe']],
+      ['sneakers', ['sneaker', 'sports shoe']],
+      ['watches', ['watch']],
+      ['perfumes-body-mists', ['perfume', 'body mist', 'fragrance']],
+      ['sunglasses-frames', ['sunglass', 'frame']],
+      ['wallets', ['wallet']],
+      ['belts', ['belt']],
+      ['personal-care-grooming', ['grooming', 'face wash', 'trimmer']],
+    ];
+
+    const match = sectionMatches.find(([, keywords]) =>
+      keywords.some((keyword) => query.includes(keyword))
+    );
+
+    router.push(match ? `/men/${match[0]}` : '/men/topwear');
+    setIsOpen(false);
+  };
+
   return (
     <>
       <style>{`
@@ -265,7 +303,7 @@ export default function Navbar() {
         }
         .nav-search input::placeholder { color: #9ca3af; font-size: 13px; }
         .nav-search input:focus { border-color: #ec4899; background: #fff; box-shadow: 0 0 0 3px rgba(236,72,153,0.12); }
-        .nav-search-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #d1d5db; display: flex; align-items: center; }
+        .nav-search-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #d1d5db; display: flex; align-items: center; border: none; background: transparent; padding: 0; cursor: pointer; }
         .nav-right { display: flex; align-items: center; gap: 4px; }
         .nav-icon-btn {
           background: transparent; border: none; color: #6b7280; padding: 8px;
@@ -289,7 +327,7 @@ export default function Navbar() {
           border-radius: 50px; color: #1f2937; font-size: 14px; outline: none; font-family: inherit;
         }
         .mobile-search input::placeholder { color: #d1d5db; }
-        .mobile-search-icon { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: #d1d5db; }
+        .mobile-search-icon { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: #d1d5db; border: none; background: transparent; padding: 0; cursor: pointer; }
         .mobile-nav-link {
           display: block; padding: 10px 4px; color: #6b7280; text-decoration: none; font-size: 15px;
           border-bottom: 1px solid rgba(236,72,153,0.05); transition: color 0.2s;
@@ -355,15 +393,15 @@ export default function Navbar() {
             ))}
           </ul>
 
-          <div className="nav-search">
+          <form className="nav-search" onSubmit={handleSearchSubmit}>
             <input
               type="text"
               placeholder="Search products..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
             />
-            <span className="nav-search-icon"><Search size={14} /></span>
-          </div>
+            <button type="submit" className="nav-search-icon" aria-label="Search products"><Search size={14} /></button>
+          </form>
         </div>
 
         {/* Right */}
@@ -638,15 +676,15 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {isOpen && (
         <div className="mobile-menu" style={{ position: 'fixed', top: scrolled ? '57px' : '73px', left: 0, right: 0, zIndex: 99 }}>
-          <div className="mobile-search">
+          <form className="mobile-search" onSubmit={handleSearchSubmit}>
             <input
               type="text"
               placeholder="Search products..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
             />
-            <span className="mobile-search-icon"><Search size={14} /></span>
-          </div>
+            <button type="submit" className="mobile-search-icon" aria-label="Search products"><Search size={14} /></button>
+          </form>
           {navItems.map(item => (
             <Link key={item.href} href={item.href} className="mobile-nav-link" onClick={() => setIsOpen(false)}>
               {item.label}
